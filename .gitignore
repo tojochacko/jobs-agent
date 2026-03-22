@@ -1,1 +1,11 @@
 .worktrees/
+
+.env
+*.db
+uploads/*
+!uploads/.gitkeep
+__pycache__/
+.pytest_cache/
+node_modules/
+dist/
+.venv/
