@@ -1,0 +1,20 @@
+{
+  "jobs_results": [
+    {
+      "title": "Senior Python Engineer",
+      "company_name": "Acme Corp",
+      "location": "Remote",
+      "description": "Build scalable APIs with Python and FastAPI.",
+      "job_id": "abc123",
+      "related_links": [{"link": "https://acme.com/careers/senior-python-engineer", "text": "Apply"}]
+    },
+    {
+      "title": "Backend Engineer",
+      "company_name": "Beta Inc",
+      "location": "San Francisco, CA",
+      "description": "Work on distributed systems at scale.",
+      "job_id": "def456",
+      "related_links": [{"link": "https://betainc.com/jobs/backend-engineer", "text": "Apply"}]
+    }
+  ]
+}
