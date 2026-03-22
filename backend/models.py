@@ -1,0 +1,41 @@
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, UniqueConstraint
+from backend.database import Base
+
+
+class Preference(Base):
+    __tablename__ = "preferences"
+    id = Column(Integer, primary_key=True)
+    job_titles = Column(Text, nullable=False)        # JSON string
+    location = Column(String)
+    remote_hybrid = Column(String)                   # 'remote'|'hybrid'|'onsite'|'any'
+    experience_level = Column(String)
+    domain = Column(String)
+    company_size = Column(Text)                      # JSON string
+    poll_interval_hrs = Column(Integer, default=6)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Resume(Base):
+    __tablename__ = "resume"
+    id = Column(Integer, primary_key=True)
+    filename = Column(String, nullable=False)
+    filepath = Column(String, nullable=False)        # path on disk
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Job(Base):
+    __tablename__ = "jobs"
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    company = Column(String, nullable=False)
+    url = Column(String, nullable=False, unique=True)
+    description = Column(Text)
+    location = Column(String)
+    match_score = Column(Float)
+    source = Column(String, nullable=False)          # 'serpapi'|'webhook'
+    # 'new'|'saved'|'dismissed'|'applying'|'applied'|'emailing'|'emailed'|'error'
+    status = Column(String, default="new")
+    error_reason = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("url", name="uq_jobs_url"),)
