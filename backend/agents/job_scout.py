@@ -92,3 +92,7 @@ def run_job_scout(preferences: dict) -> list[dict]:
                     })
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
+            continue
+
+        # Unexpected stop reason (max_tokens, stop_sequence, etc.) — abort gracefully
+        return []

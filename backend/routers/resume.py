@@ -1,6 +1,6 @@
 from pathlib import Path
 from fastapi import APIRouter, Depends, UploadFile, File
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from backend.config import settings
 from backend.database import get_db
@@ -14,8 +14,7 @@ class ResumeResponse(BaseModel):
     filename: str
     filepath: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 @router.post("/resume", response_model=ResumeResponse)
