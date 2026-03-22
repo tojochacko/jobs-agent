@@ -895,7 +895,7 @@ Expected: `Cannot find module`
 
 ```jsx
 import { useState } from 'react'
-import { updateApplication } from '../api/client'
+import { updateApplication, openInBrowser } from '../api/client'
 
 export function ReviewPanel({ application, tailoredResume, onClose, onStatusChange }) {
   const [submitting, setSubmitting] = useState(false)
