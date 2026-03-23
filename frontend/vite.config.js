@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '^/(preferences|resume|jobs|applications|outreach|auth|webhook|health)': {
-        target: 'http://localhost:8000',
+        target: process.env.BACKEND_URL || 'http://localhost:8000',
         changeOrigin: true,
       },
     },
