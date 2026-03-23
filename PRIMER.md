@@ -1,5 +1,16 @@
 # JobApplierAgent — Session Primer
 
+## What Was Done (2026-03-23, Session 4)
+
+- Implemented **Task 4 of Phase 2**: the Applicator Agent (`backend/agents/applicator.py`).
+  - `run_applicator(job_id, job_url, job_description, resume_path)` orchestrates three steps: form scraping via `fetch_application_form`, resume tailoring via `tailor_resume` (text format), and LLM field mapping via `anthropic.Anthropic.messages.create`.
+  - Returns `{"status": "ready", "form_payload": {...}, "tailored_resume": "...", "form_fields": [...], "url": ...}` on success.
+  - Returns `{"status": "manual_required", "url": ...}` if form scraping fails, resume tailoring raises, or the LLM call raises.
+  - Handles malformed JSON from the LLM gracefully — logs a warning and returns `form_payload: {}` instead of crashing.
+- Added 3 TDD tests in `backend/tests/test_applicator_agent.py` covering: happy path, form scraping failure, and invalid LLM JSON.
+- Full backend test suite: **38 tests passing**, no regressions.
+- Committed as `feat: add Applicator agent with form scraping and resume tailoring` on branch `feature/phase2-application-flow`.
+
 ## What Was Done (2026-03-23, Session 3)
 
 - Implemented **Task 2 of Phase 2**: Playwright form scraping and supervised prefill tools (`backend/tools/playwright_tools.py`).
@@ -37,20 +48,18 @@
 - **Phase 2 (Application Flow):** In progress.
   - Task 1 (Resume Tailoring Tool): DONE — `backend/tools/resume_tools.py` committed.
   - Task 2 (Playwright Tools): DONE — `backend/tools/playwright_tools.py` committed.
-  - Task 3 (Application Model): Pending.
-  - Task 4 (Applicator Agent): Pending.
+  - Task 3 (Application Model): DONE — `Application` ORM model in `backend/models.py` committed.
+  - Task 4 (Applicator Agent): DONE — `backend/agents/applicator.py` committed.
   - Task 5 (Applications Router): Pending.
   - Task 6 (ReviewPanel + Apply Flow): Pending.
   - Task 7 (Applications Pipeline Page): Pending.
 - **Phase 3 (Cold Email Outreach):** Planned.
 - **Phase 4 (Webhook Integration):** Planned.
-- Full backend test suite: 34 tests passing, no regressions.
+- Full backend test suite: 38 tests passing, no regressions.
 - Active worktree: `/Users/tojochacko/code/JobApplierAgent/.worktrees/phase2-application-flow/` on branch `feature/phase2-application-flow`.
 
 ## Next Steps
 
-- Phase 2 Task 3: Add Application ORM model to `backend/models.py`.
-- Phase 2 Task 4: Implement Applicator Agent (`backend/agents/applicator.py`).
 - Phase 2 Task 5: Implement Applications Router (`backend/routers/applications.py`).
 - Phase 2 Tasks 6–7: Frontend ReviewPanel component and Applications Pipeline page.
 - Once Phase 2 is stable, begin Phase 3 (Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation).
