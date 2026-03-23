@@ -1,6 +1,17 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done (2026-03-23)
+## What Was Done (2026-03-23, Session 2)
+
+- Implemented **Task 1 of Phase 2**: the shared resume tailoring tool (`backend/tools/resume_tools.py`).
+  - Added `tailor_resume()`, `_read_resume()`, and `_write_pdf()` functions.
+  - `_read_resume()` supports `.txt`, `.pdf` (via pdfminer.six), and `.docx`/`.doc` (via python-docx).
+  - `_write_pdf()` uses fpdf2 to write tailored resume text as a PDF.
+  - `tailor_resume()` calls the Anthropic API (model from `settings.APPLICATOR_MODEL`) and returns either plain text or a PDF path.
+- Added 3 TDD tests in `backend/tests/test_resume_tools.py` — all passing (32/32 full suite).
+- Added `fpdf2==2.7.9`, `pdfminer.six==20231228`, `python-docx==1.1.2` to `backend/requirements.txt`.
+- Committed as `feat: add shared resume tailoring tool` on branch `feature/phase2-application-flow`.
+
+## What Was Done (2026-03-23, Session 1)
 
 - Added a **Docker Environment** section to `CLAUDE.md` documenting that the project uses Docker containers for both dev and production.
 - Corrected a hallucinated `docker-compose.dev.yml` command — confirmed via codebase research that development uses **VSCode Dev Containers** (`.devcontainer/devcontainer.json` + `.devcontainer/docker-compose.yml`), not a separate compose file.
@@ -12,14 +23,24 @@
 ## Current State
 
 - **Phase 1 (Foundation Dashboard):** Complete — backend API, JobScout Agent, scheduler, job dashboard, preferences, resume upload all implemented.
-- **Phase 2 (Application Flow):** In progress — Applicator Agent, Playwright form pre-fill, application tracking pipeline.
+- **Phase 2 (Application Flow):** In progress.
+  - Task 1 (Resume Tailoring Tool): DONE — `backend/tools/resume_tools.py` committed.
+  - Task 2 (Playwright Tools): Pending.
+  - Task 3 (Application Model): Pending.
+  - Task 4 (Applicator Agent): Pending.
+  - Task 5 (Applications Router): Pending.
+  - Task 6 (ReviewPanel + Apply Flow): Pending.
+  - Task 7 (Applications Pipeline Page): Pending.
 - **Phase 3 (Cold Email Outreach):** Planned.
 - **Phase 4 (Webhook Integration):** Planned.
-- `CLAUDE.md` is up to date with correct Docker/devcontainer setup and behaviour rules.
-- No code changes were made this session — only documentation and configuration updates.
+- Full backend test suite: 32 tests passing, no regressions.
+- Active worktree: `/Users/tojochacko/code/JobApplierAgent/.worktrees/phase2-application-flow/` on branch `feature/phase2-application-flow`.
 
 ## Next Steps
 
-- Continue Phase 2: implement/complete the Applicator Agent (`backend/agents/applicator.py`), Playwright form pre-fill tools, and application tracking pipeline.
-- Add pytest coverage for any new agent tools or API endpoints introduced in Phase 2.
+- Phase 2 Task 2: Implement Playwright tools (`backend/tools/playwright_tools.py`) — form scraping and supervised pre-fill.
+- Phase 2 Task 3: Add Application ORM model to `backend/models.py`.
+- Phase 2 Task 4: Implement Applicator Agent (`backend/agents/applicator.py`).
+- Phase 2 Task 5: Implement Applications Router (`backend/routers/applications.py`).
+- Phase 2 Tasks 6–7: Frontend ReviewPanel component and Applications Pipeline page.
 - Once Phase 2 is stable, begin Phase 3 (Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation).
