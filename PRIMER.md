@@ -1,6 +1,23 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-23, Phase 3 Task 4)
+## What Was Done This Session (2026-03-23, Phase 3 Task 5)
+
+Implemented **Phase 3 Task 5 — Outreach Router** using TDD on `main`.
+
+| Step | What was done |
+|---|---|
+| Pre-read | Verified `Resume.filepath` field name, `settings.UPLOAD_DIR` already in `config.py`, `send_email` signature, `run_outreach` signature |
+| Tests written | Created `backend/tests/test_outreach_router.py` with 5 tests covering POST trigger, GET list, PATCH edit, POST send, and 400 on missing email |
+| Red phase | Confirmed 5 test failures (routes 404) before implementation |
+| Router implemented | Created `backend/routers/outreach.py` — POST `/outreach` (triggers outreach agent, stores draft), GET `/outreach` (list), PATCH `/outreach/{id}` (edit hr_name/hr_email/cover_letter only), POST `/outreach/{id}/send` (dispatches email, sets status=sent + sent_at) |
+| `main.py` updated | `outreach` router imported and registered with `app.include_router(outreach.router)` |
+| Green phase | All 5 new tests pass; all 63 backend tests pass (0 failures) |
+| Committed | `feat: add outreach router with draft, edit, and send flow` |
+| Note | Docker does not bind-mount source; files copied via `docker cp` |
+
+---
+
+## Previous Session (2026-03-23, Phase 3 Task 4)
 
 Implemented **Phase 3 Task 4 — Outreach Agent** using TDD on `main`.
 
@@ -90,7 +107,7 @@ Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks o
 |---|---|
 | 1 — Foundation Dashboard | ✅ Complete |
 | 2 — Application Flow | ✅ Complete (merged this session) |
-| 3 — Cold Email Outreach | 🔄 In progress (Tasks 1–4 done) |
+| 3 — Cold Email Outreach | 🔄 In progress (Tasks 1–5 done) |
 | 4 — Webhook Integration | 🔲 Planned |
 
 **New files added this phase:**
@@ -128,6 +145,6 @@ Key things to know going into Phase 3 Task 2+:
 - `get_valid_token(provider, db)` is in `email_tools.py` — call this from Outreach agent before sending
 - `send_email(to, subject, body, attachment_path, db)` is the top-level dispatch function (auto-selects Gmail/Outlook via `settings.EMAIL_PROVIDER`)
 - Auth endpoints live at `POST /auth/email/connect` and `GET /auth/email/callback`
-- Next task: Task 5 — Outreach Router
+- Next task: Task 6 — Frontend Outreach Panel and Pages
 
 Use `superpowers:subagent-driven-development` to execute Phase 3 task by task.
