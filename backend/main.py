@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import engine, Base
-from backend.routers import preferences, resume, jobs, applications, auth, outreach
+from backend.routers import preferences, resume, jobs, applications, auth, outreach, webhook
 from backend.scheduler import start_scheduler
 
 logging.basicConfig(level=logging.INFO)
@@ -36,6 +36,7 @@ app.include_router(jobs.router)
 app.include_router(applications.router)
 app.include_router(auth.router)
 app.include_router(outreach.router)
+app.include_router(webhook.router)
 
 
 @app.get("/health")
