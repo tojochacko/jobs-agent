@@ -1,6 +1,24 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-23, Phase 3 Task 2)
+## What Was Done This Session (2026-03-23, Phase 3 Task 3)
+
+Implemented **Phase 3 Task 3 — OAuth Token Management + Auth Router** using TDD on `main`.
+
+| Step | What was done |
+|---|---|
+| Dependencies installed | `google-auth`, `google-auth-oauthlib`, `google-api-python-client`, `msal` installed in container and added to `requirements.txt` |
+| Tests written | Created `backend/tests/test_email_tools.py` (3 tests) and `backend/tests/test_auth_router.py` (2 tests) |
+| Red phase | Confirmed `ModuleNotFoundError` for all 5 tests before implementation |
+| `email_tools.py` implemented | `get_valid_token()` — loads token from DB, refreshes if expired, persists update; `send_email_gmail()`, `send_email_outlook()`, `send_email()` dispatch functions |
+| `auth.py` router implemented | `POST /auth/email/connect` returns OAuth authorization URL; `GET /auth/email/callback` exchanges code, upserts `OAuthToken` in DB |
+| `main.py` updated | `auth` router imported and registered with `app.include_router(auth.router)` |
+| Note | Docker does not volume-mount source code; all files must be copied with `docker compose cp` |
+| Green phase | All 5 new tests pass; all 56 backend tests pass (0 failures) |
+| Committed | `feat: add OAuth token management and email send tools` |
+
+---
+
+## Previous Session (2026-03-23, Phase 3 Task 2)
 
 Implemented **Phase 3 Task 2 — HR Contact Finder Tool** using TDD on `main`.
 
@@ -55,7 +73,7 @@ Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks o
 |---|---|
 | 1 — Foundation Dashboard | ✅ Complete |
 | 2 — Application Flow | ✅ Complete (merged this session) |
-| 3 — Cold Email Outreach | 🔄 In progress (Tasks 1–2 done) |
+| 3 — Cold Email Outreach | 🔄 In progress (Tasks 1–3 done) |
 | 4 — Webhook Integration | 🔲 Planned |
 
 **New files added this phase:**
@@ -90,6 +108,9 @@ Key things to know going into Phase 3 Task 2+:
 - `OAuthToken` and `Outreach` models are now in `models.py` — Task 1 complete
 - OAuth tokens are stored in the DB (`oauth_tokens` table), not in `.env`
 - Email provider selected via `EMAIL_PROVIDER` env var (`gmail` or `outlook`)
-- Next task: Task 3 — OAuth Token Management + Auth Router
+- `get_valid_token(provider, db)` is in `email_tools.py` — call this from Outreach agent before sending
+- `send_email(to, subject, body, attachment_path, db)` is the top-level dispatch function (auto-selects Gmail/Outlook via `settings.EMAIL_PROVIDER`)
+- Auth endpoints live at `POST /auth/email/connect` and `GET /auth/email/callback`
+- Next task: Task 4 — Outreach Agent
 
 Use `superpowers:subagent-driven-development` to execute Phase 3 task by task.
