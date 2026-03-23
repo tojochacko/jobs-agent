@@ -73,3 +73,19 @@ def test_patch_application_status_submitted(client, db_session, job):
 def test_patch_application_not_found(client):
     response = client.patch("/applications/9999", json={"status": "submitted"})
     assert response.status_code == 404
+
+
+def test_open_in_browser(client, db_session, job):
+    from unittest.mock import patch
+    app = Application(job_id=job.id, status="pending", form_payload="{}")
+    db_session.add(app)
+    db_session.commit()
+    with patch("backend.tools.playwright_tools.open_prefilled_form"):
+        response = client.post(f"/applications/{app.id}/open")
+    assert response.status_code == 200
+    assert response.json()["status"] == "browser_opened"
+
+
+def test_open_in_browser_not_found(client):
+    response = client.post("/applications/9999/open")
+    assert response.status_code == 404

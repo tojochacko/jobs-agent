@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -51,19 +51,25 @@ def trigger_application(body: TriggerApplicationRequest, db: Session = Depends(g
     db.commit()
 
     resume_path = get_resume_path(db)
-    result = run_applicator(
-        job_id=job.id,
-        job_url=job.url,
-        job_description=job.description or "",
-        resume_path=resume_path or "",
-    )
+    try:
+        result = run_applicator(
+            job_id=job.id,
+            job_url=job.url,
+            job_description=job.description or "",
+            resume_path=resume_path or "",
+        )
+    except Exception as e:
+        job.status = "error"
+        job.error_reason = str(e)
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"Application flow failed: {e}")
 
-    status = "manual_required" if result["status"] == "manual_required" else "pending"
+    is_manual = result["status"] == "manual_required"
     app = Application(
         job_id=job.id,
-        tailored_resume_text=result.get("tailored_resume", ""),
-        form_payload=json.dumps(result.get("form_payload", {})),
-        status=status,
+        tailored_resume_text=None if is_manual else result.get("tailored_resume"),
+        form_payload=None if is_manual else json.dumps(result.get("form_payload", {})),
+        status="manual_required" if is_manual else "pending",
     )
     db.add(app)
     db.commit()
@@ -80,6 +86,8 @@ def open_in_browser(app_id: int, db: Session = Depends(get_db)):
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
     job = db.query(Job).filter(Job.id == app.job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
     payload = json.loads(app.form_payload or "{}")
     threading.Thread(target=open_prefilled_form, args=(job.url, payload), daemon=True).start()
     return {"status": "browser_opened", "url": job.url}
@@ -99,7 +107,7 @@ def update_application(app_id: int, body: PatchApplicationRequest, db: Session =
     if body.status:
         app.status = body.status
         if body.status == "submitted":
-            app.applied_at = datetime.utcnow()
+            app.applied_at = datetime.now(timezone.utc)
             job = db.query(Job).filter(Job.id == app.job_id).first()
             if job:
                 job.status = "applied"
