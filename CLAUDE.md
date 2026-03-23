@@ -1,5 +1,10 @@
 # JobApplierAgent — Claude Code Guide
 
+## Claude Behaviour Rules
+
+- **Always research before responding.** Before describing project structure, commands, file paths, or tooling, read the actual files in the codebase. Never invent file names, commands, or configuration that have not been verified to exist. If uncertain, use Glob/Grep/Read tools to confirm first.
+- **Write/update `PRIMER.md` after every session.** At the end of each conversation, write or update `PRIMER.md` in the project root with three sections: what was done this session, current state of the project, and recommended next steps. This keeps context continuity across sessions.
+
 ## Project Overview
 
 JobApplierAgent is a single-user autonomous job search assistant. It discovers matching jobs, pre-fills applications for supervised submission, sends cold emails to HR contacts, and accepts job alerts from external agents via webhook. The user retains final control over every submission and send action.
@@ -82,19 +87,34 @@ React Frontend (Vite @ :5173)
         └─ SQLite DB
 ```
 
-## Development Commands
+## Docker Environment
+
+**This project runs entirely inside Docker containers.**
+
+- **Development:** VSCode Dev Containers (`.devcontainer/`). Open the project in VSCode and use "Reopen in Container" — this builds and attaches to the `backend` service with hot-reload and port forwarding for both `:8000` and `:5173`.
+- **Production:** `docker compose up --build` using the root `docker-compose.yml`.
+
+> **IMPORTANT for Claude:** Do NOT run host-level tooling commands such as `npm`, `pip`, `uv`, `ruff`, `uvicorn`, `pytest`, `node`, or any other package manager / runtime commands directly in the host shell. All such commands must be executed inside the appropriate container.
+
+Run commands inside containers (when not using the devcontainer terminal):
+```bash
+docker compose exec backend pytest           # run backend tests
+docker compose exec backend ruff check .     # lint backend
+docker compose exec frontend npm run test:run  # run frontend tests
+docker compose exec frontend npm run lint    # lint frontend
+```
+
+## Development Commands (inside containers)
 
 **Backend:**
-```bash
-cd backend
+```
 pip install -r requirements.txt
 uvicorn main:app --reload          # starts at :8000
 pytest                             # run all tests
 ```
 
 **Frontend:**
-```bash
-cd frontend
+```
 npm install
 npm run dev                        # starts Vite at :5173
 npm run test:run                   # run tests once
