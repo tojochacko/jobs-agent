@@ -1,6 +1,12 @@
+import { useState } from 'react'
 import { StatusBadge } from './StatusBadge'
+import { triggerApply } from '../api/client'
+import { ReviewPanel } from './ReviewPanel'
 
 export function JobCard({ job, onDelete }) {
+  const [applying, setApplying] = useState(false)
+  const [application, setApplication] = useState(null)
+
   return (
     <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
@@ -23,10 +29,27 @@ export function JobCard({ job, onDelete }) {
         <a href={job.url} target="_blank" rel="noopener noreferrer">
           <button>View Job</button>
         </a>
-        <button disabled title="Available in Phase 2">Apply</button>
+        <button
+          disabled={applying || ['applying', 'applied'].includes(job.status)}
+          onClick={() => {
+            setApplying(true)
+            triggerApply(job.id)
+              .then(app => setApplication(app))
+              .finally(() => setApplying(false))
+          }}
+        >
+          {applying ? 'Preparing…' : 'Apply'}
+        </button>
         <button disabled title="Available in Phase 3">Email HR</button>
         <button onClick={() => onDelete?.(job.id)} aria-label="Dismiss">Dismiss</button>
       </div>
+      {application && (
+        <ReviewPanel
+          application={application}
+          onClose={() => setApplication(null)}
+          onStatusChange={(updated) => setApplication(updated)}
+        />
+      )}
     </div>
   )
 }

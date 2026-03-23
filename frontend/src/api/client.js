@@ -14,3 +14,8 @@ export const uploadResume = (file) => {
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then(r => r.data)
 }
+
+export const triggerApply = (jobId) => axios.post('/applications', { job_id: jobId }).then(r => r.data)
+export const getApplications = () => axios.get('/applications').then(r => r.data)
+export const updateApplication = (id, data) => axios.patch(`/applications/${id}`, data).then(r => r.data)
+export const openInBrowser = (appId) => axios.post(`/applications/${appId}/open`).then(r => r.data)
