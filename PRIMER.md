@@ -1,102 +1,63 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done (2026-03-23, Session 7)
+## What Was Done This Session (2026-03-23)
 
-- Implemented **Task 7 of Phase 2**: Applications Pipeline page (frontend).
-  - Created `frontend/src/pages/Applications.test.jsx` with 2 TDD tests (pipeline headers render, application appears in correct stage).
-  - Created `frontend/src/pages/Applications.jsx`: Kanban-style pipeline with 4 columns — Reviewing (pending/reviewing), Manual Required (manual_required), Applied (submitted), Response (rejected/interviewing/offered). Fetches both `getApplications()` and `getJobs()` in parallel, maps job metadata by ID for display.
-  - Updated `frontend/src/App.jsx`: imported `Applications`, added `<Link to="/applications">Applications</Link>` nav link, added `<Route path="/applications" element={<Applications />} />` route.
-- Full frontend test suite: **16 tests passing** (14 existing + 2 new), no regressions.
-- Full backend test suite: **46 tests passing**, no regressions.
-- Committed as `feat: add Applications pipeline page` on branch `feature/phase2-application-flow`.
+Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks on `feature/phase2-application-flow` (merged to `main`).
 
-## What Was Done (2026-03-23, Session 6)
+| Task | What was built |
+|---|---|
+| 1 — Resume Tailoring Tool | `backend/tools/resume_tools.py` — `tailor_resume()` with text/PDF modes, .txt/.pdf/.docx support, hardened error handling, optional `model` param |
+| 2 — Playwright Tools | `backend/tools/playwright_tools.py` — `fetch_application_form()` + `open_prefilled_form()`; Dockerfile updated with Chromium system deps |
+| 3 — Application Model | `Application` ORM model added to `backend/models.py` |
+| 4 — Applicator Agent | `backend/agents/applicator.py` — `run_applicator()`: scrape form → tailor resume → LLM field mapping |
+| 5 — Applications Router | `backend/routers/applications.py` — POST/GET/PATCH /applications + open-in-browser endpoint; error recovery sets job to `error` on agent failure |
+| 6 — ReviewPanel + Apply Flow | `ReviewPanel.jsx`, Apply button wired in `JobCard.jsx`, error handling on all API calls |
+| 7 — Applications Pipeline Page | `Applications.jsx` Kanban pipeline (4 stages), `/applications` route in `App.jsx` |
 
-- Implemented **Task 6 of Phase 2**: ReviewPanel component and Apply flow (frontend).
-  - Added 4 new API exports to `frontend/src/api/client.js`: `triggerApply`, `getApplications`, `updateApplication`, `openInBrowser`.
-  - Created `frontend/src/components/ReviewPanel.jsx`: displays pre-filled form fields table and tailored resume text; "Mark as Submitted" button calls `updateApplication(id, {status:'submitted'})` then invokes `onClose`; shows a yellow "Manual Required" warning when `application.status === 'manual_required'`; "Open in Browser" button calls `openInBrowser`.
-  - Updated `frontend/src/components/JobCard.jsx`: Apply button now calls `triggerApply(job.id)` and renders `ReviewPanel` inline when a response is returned; button is disabled while in-flight and when `job.status` is `applying` or `applied`.
-  - Created `frontend/src/components/ReviewPanel.test.jsx` with 3 TDD tests (renders fields, marks submitted, shows manual required).
-- Full frontend test suite: **14 tests passing** (11 existing + 3 new), no regressions.
-- Committed as `feat: add ReviewPanel component and Apply flow in JobCard` on branch `feature/phase2-application-flow`.
+**Test coverage:** 46 backend + 16 frontend = **62 tests, all passing** on `main`.
 
-## What Was Done (2026-03-23, Session 5)
-
-- Implemented **Task 5 of Phase 2**: the Applications Router (`backend/routers/applications.py`).
-  - `POST /applications` — triggers the Applicator Agent for a job; sets `job.status = "applying"` immediately; returns 409 if already `applying` or `applied`; stores `Application` record with `status="pending"` (or `"manual_required"` for Playwright fallback).
-  - `GET /applications` — lists all application records.
-  - `PATCH /applications/{id}` — updates `status`/`notes`; when `status="submitted"` sets `applied_at` and transitions `job.status = "applied"`.
-  - `POST /applications/{id}/open` — launches Playwright supervised browser (daemon thread) for manual form submission.
-  - Registered the router in `backend/main.py`.
-- Added 6 TDD tests in `backend/tests/test_applications_router.py`: trigger flow, duplicate 409, manual_required, list, patch-to-submitted, not-found — all passing.
-- Full backend test suite: **44 tests passing**, no regressions.
-- Committed as `feat: add applications router with apply trigger and status tracking` on branch `feature/phase2-application-flow`.
-
-## What Was Done (2026-03-23, Session 4)
-
-- Implemented **Task 4 of Phase 2**: the Applicator Agent (`backend/agents/applicator.py`).
-  - `run_applicator(job_id, job_url, job_description, resume_path)` orchestrates three steps: form scraping via `fetch_application_form`, resume tailoring via `tailor_resume` (text format), and LLM field mapping via `anthropic.Anthropic.messages.create`.
-  - Returns `{"status": "ready", "form_payload": {...}, "tailored_resume": "...", "form_fields": [...], "url": ...}` on success.
-  - Returns `{"status": "manual_required", "url": ...}` if form scraping fails, resume tailoring raises, or the LLM call raises.
-  - Handles malformed JSON from the LLM gracefully — logs a warning and returns `form_payload: {}` instead of crashing.
-- Added 3 TDD tests in `backend/tests/test_applicator_agent.py` covering: happy path, form scraping failure, and invalid LLM JSON.
-- Full backend test suite: **38 tests passing**, no regressions.
-- Committed as `feat: add Applicator agent with form scraping and resume tailoring` on branch `feature/phase2-application-flow`.
-
-## What Was Done (2026-03-23, Session 3)
-
-- Implemented **Task 2 of Phase 2**: Playwright form scraping and supervised prefill tools (`backend/tools/playwright_tools.py`).
-  - `fetch_application_form(url)`: launches headless Chromium, navigates to the URL, scrapes all `input`/`textarea`/`select` elements, excludes `file`/`hidden`/`submit`/`button` type inputs, returns `{"fields": [...], "title": ..., "url": ...}`. On any exception, returns `{"status": "manual_required", "url": ..., "error": ...}`.
-  - `open_prefilled_form(url, payload)`: opens a non-headless browser, navigates to the URL, fills each field using `[name='...'], [id='...']` locators, then blocks on `input()` so the user can submit manually before the browser closes.
-- Added `playwright>=1.48.0` to `backend/requirements.txt`.
-- Updated `backend/Dockerfile` to install Chromium system packages (`chromium`, `chromium-driver`, `libnss3`, etc.) and set `PLAYWRIGHT_BROWSERS_PATH`/`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` env vars so Playwright uses system Chromium.
-- Added 2 TDD tests in `backend/tests/test_playwright_tools.py` — all passing.
-- Full backend test suite: 34 tests passing (up from 32), no regressions.
-- Committed as `feat: add Playwright form scraping and supervised prefill tools` on branch `feature/phase2-application-flow`.
-
-## What Was Done (2026-03-23, Session 2)
-
-- Implemented **Task 1 of Phase 2**: the shared resume tailoring tool (`backend/tools/resume_tools.py`).
-  - Added `tailor_resume()`, `_read_resume()`, and `_write_pdf()` functions.
-  - `_read_resume()` supports `.txt`, `.pdf` (via pdfminer.six), and `.docx`/`.doc` (via python-docx).
-  - `_write_pdf()` uses fpdf2 to write tailored resume text as a PDF.
-  - `tailor_resume()` calls the Anthropic API (model from `settings.APPLICATOR_MODEL`) and returns either plain text or a PDF path.
-- Added 3 TDD tests in `backend/tests/test_resume_tools.py` — all passing (32/32 full suite).
-- Added `fpdf2==2.7.9`, `pdfminer.six==20231228`, `python-docx==1.1.2` to `backend/requirements.txt`.
-- Committed as `feat: add shared resume tailoring tool` on branch `feature/phase2-application-flow`.
-
-## What Was Done (2026-03-23, Session 1)
-
-- Added a **Docker Environment** section to `CLAUDE.md` documenting that the project uses Docker containers for both dev and production.
-- Corrected a hallucinated `docker-compose.dev.yml` command — confirmed via codebase research that development uses **VSCode Dev Containers** (`.devcontainer/devcontainer.json` + `.devcontainer/docker-compose.yml`), not a separate compose file.
-- Added a **Claude Behaviour Rules** section to `CLAUDE.md` with two rules:
-  1. Always research the codebase before responding — never invent file names, commands, or config.
-  2. Write/update `PRIMER.md` at the end of every session.
-- Created persistent memory entry `feedback_research_before_responding.md` to reinforce the research-first rule across sessions.
+---
 
 ## Current State
 
-- **Phase 1 (Foundation Dashboard):** Complete — backend API, JobScout Agent, scheduler, job dashboard, preferences, resume upload all implemented.
-- **Phase 2 (Application Flow):** In progress.
-  - Task 1 (Resume Tailoring Tool): DONE — `backend/tools/resume_tools.py` committed.
-  - Task 2 (Playwright Tools): DONE — `backend/tools/playwright_tools.py` committed.
-  - Task 3 (Application Model): DONE — `Application` ORM model in `backend/models.py` committed.
-  - Task 4 (Applicator Agent): DONE — `backend/agents/applicator.py` committed.
-  - Task 5 (Applications Router): DONE — `backend/routers/applications.py` committed.
-  - Task 6 (ReviewPanel + Apply Flow): DONE — `frontend/src/components/ReviewPanel.jsx` committed.
-  - Task 7 (Applications Pipeline Page): DONE — `frontend/src/pages/Applications.jsx` committed.
-- **Phase 2 (Application Flow): ALL TASKS COMPLETE.**
-- **Phase 3 (Cold Email Outreach):** Planned.
-- **Phase 4 (Webhook Integration):** Planned.
-- Full backend test suite: 46 tests passing, no regressions.
-- Full frontend test suite: 16 tests passing, no regressions.
-- Active worktree: `/Users/tojochacko/code/JobApplierAgent/.worktrees/phase2-application-flow/` on branch `feature/phase2-application-flow`.
+| Phase | Status |
+|---|---|
+| 1 — Foundation Dashboard | ✅ Complete |
+| 2 — Application Flow | ✅ Complete (merged this session) |
+| 3 — Cold Email Outreach | 🔲 Planned |
+| 4 — Webhook Integration | 🔲 Planned |
 
-## Next Steps
+**New files added this phase:**
+```
+backend/agents/applicator.py
+backend/routers/applications.py
+backend/tools/playwright_tools.py
+backend/tools/resume_tools.py
+frontend/src/pages/Applications.jsx
+frontend/src/components/ReviewPanel.jsx
+```
 
-- Phase 2 is now complete — consider merging `feature/phase2-application-flow` into `main`.
-- Begin Phase 3: Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation.
-  - Task 1: Email tools (`backend/tools/email_tools.py`) — Gmail/Outlook OAuth send.
-  - Task 2: Outreach Agent (`backend/agents/outreach.py`) — SerpAPI HR lookup + email draft.
-  - Task 3: Outreach Router (`backend/routers/outreach.py`) — POST/GET/PATCH /outreach, POST /outreach/{id}/send.
-  - Task 4: Outreach page (`frontend/src/pages/Outreach.jsx`) — cold email history UI.
+**Modified files:**
+```
+backend/models.py        (Application model added)
+backend/main.py          (applications router registered)
+backend/Dockerfile       (Chromium system deps added)
+backend/requirements.txt (fpdf2, pdfminer.six, python-docx, playwright added)
+frontend/src/components/JobCard.jsx  (Apply button wired)
+frontend/src/api/client.js           (4 new exports)
+frontend/src/App.jsx                 (/applications route added)
+```
+
+---
+
+## Recommended Next Steps
+
+**Phase 3 — Cold Email Outreach** is next. Plan file: `docs/superpowers/plans/2026-03-22-phase3-cold-email-outreach.md`.
+
+Key things to know going into Phase 3:
+- `tailor_resume()` already supports `output_format="pdf"` for email attachments — pass `model=settings.OUTREACH_MODEL` from the Outreach agent
+- The `OAuthToken` model is referenced in CLAUDE.md but not yet in `models.py` — Phase 3 Task 1 must add it
+- OAuth tokens are stored in the DB (`oauth_tokens` table), not in `.env`
+- Email provider selected via `EMAIL_PROVIDER` env var (`gmail` or `outlook`)
+
+Use `superpowers:subagent-driven-development` to execute Phase 3 task by task.
