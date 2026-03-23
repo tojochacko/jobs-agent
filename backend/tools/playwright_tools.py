@@ -51,12 +51,13 @@ def open_prefilled_form(url: str, payload: dict) -> None:
         page.goto(url, wait_until="networkidle", timeout=15000)
         for field_name, value in payload.items():
             try:
-                input_type_check = page.locator(f"input[name='{field_name}'], select[name='{field_name}'], input[id='{field_name}'], select[id='{field_name}']").first
+                safe_name = field_name.replace("'", "\\'")
+                input_type_check = page.locator(f"input[name='{safe_name}'], select[name='{safe_name}'], input[id='{safe_name}'], select[id='{safe_name}']").first
                 tag_name = input_type_check.evaluate("el => el.tagName.toLowerCase()", timeout=1000)
                 if tag_name == "select":
                     input_type_check.select_option(str(value))
                 else:
-                    locator = page.locator(f"[name='{field_name}'], [id='{field_name}']").first
+                    locator = page.locator(f"[name='{safe_name}'], [id='{safe_name}']").first
                     locator.fill(str(value))
             except Exception as e:
                 logger.debug(f"Could not fill field {field_name}: {e}")
