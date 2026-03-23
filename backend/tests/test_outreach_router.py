@@ -64,3 +64,14 @@ def test_send_outreach_requires_email_address(client, db_session, job):
     db_session.commit()
     response = client.post(f"/outreach/{o.id}/send")
     assert response.status_code == 400
+
+
+def test_send_outreach_sets_job_error_on_send_failure(client, db_session, job):
+    o = Outreach(job_id=job.id, hr_email="jane@acme.com", cover_letter="Dear Jane...", status="draft")
+    db_session.add(o)
+    db_session.commit()
+    with patch("backend.routers.outreach.send_email", side_effect=Exception("SMTP failure")):
+        response = client.post(f"/outreach/{o.id}/send")
+    assert response.status_code == 500
+    db_session.refresh(job)
+    assert job.status == "error"

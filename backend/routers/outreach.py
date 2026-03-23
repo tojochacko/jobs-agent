@@ -115,13 +115,19 @@ def send_outreach(outreach_id: int, db: Session = Depends(get_db)):
 
     job = db.query(Job).filter(Job.id == record.job_id).first()
     subject = f"Application for {job.title}" if job else "Job Application"
-    send_email(
-        to=record.hr_email,
-        subject=subject,
-        body=record.cover_letter or "",
-        attachment_path=record.resume_version_path or "",
-        db=db,
-    )
+    try:
+        send_email(
+            to=record.hr_email,
+            subject=subject,
+            body=record.cover_letter or "",
+            attachment_path=record.resume_version_path or "",
+            db=db,
+        )
+    except Exception as e:
+        if job:
+            job.status = "error"
+        db.commit()
+        raise HTTPException(status_code=500, detail=str(e))
 
     record.status = "sent"
     record.sent_at = datetime.utcnow()
