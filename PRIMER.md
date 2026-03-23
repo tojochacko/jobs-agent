@@ -1,15 +1,22 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-23, Phase 4 Tasks 1–2)
+## What Was Done This Session (2026-03-23)
 
-Implemented **Phase 4 Task 1 — Orchestrator Scoring Agent** and **Phase 4 Task 2 — Webhook Router** on `main`.
+Implemented **Phase 4 — Webhook Integration** in full across 2 tasks on `main`.
 
 | Task | What was built |
 |---|---|
-| 1 — Orchestrator Scoring Agent | `backend/agents/orchestrator.py` — `score_job()` function using Claude Haiku to score a job 0.0–1.0 against user preferences; `backend/tests/test_orchestrator.py` — 3 TDD tests (happy path, malformed response, clamping) |
-| 2 — Webhook Router | `backend/routers/webhook.py` — `POST /webhook/job-alerts` endpoint with `X-Webhook-Secret` auth, score filtering via `score_job()`, `WEBHOOK_BYPASS_THRESHOLD` support, URL-based deduplication via `IntegrityError`; `backend/tests/test_webhook_router.py` — 7 TDD tests; wired into `backend/main.py` |
+| 1 — Orchestrator Scoring Agent | `backend/agents/orchestrator.py` — `score_job(job_data, preferences) -> float` using Claude Haiku; clamps to [0,1]; returns 0.0 on any error with warning log |
+| 2 — Webhook Router | `backend/routers/webhook.py` — `POST /webhook/job-alerts`; validates `X-Webhook-Secret`; scores via orchestrator; respects `JOB_MATCH_THRESHOLD` + `WEBHOOK_BYPASS_THRESHOLD`; deduplicates by URL via `IntegrityError`; sets `source="webhook"`, `status="new"` |
+| 3 — Settings verification | `frontend/src/pages/Settings.jsx` confirmed complete from Phase 3 (webhook URL + secret header shown) |
 
-**Test results:** 74/74 tests passing. TDD approach followed for both tasks: tests written and confirmed failing before implementation.
+**Test coverage:** 74 backend + 18 frontend = **92 tests, all passing** on `main`.
+
+**Phase 4 commits:**
+- `2e3abaf` feat: add Orchestrator scoring agent for webhook job evaluation
+- `70f719d` feat: add webhook endpoint for external job alert ingestion
+- `2999403` fix: isolate WEBHOOK_SECRET in test_webhook_requires_secret
+- `da4995f` fix: simplify exception clause, clarify bypass comment, add DB assertion to bypass test
 
 ---
 
@@ -26,8 +33,6 @@ Implemented **Phase 3 — Cold Email Outreach** in full across 6 tasks on `main`
 | 5 — Outreach Router | `backend/routers/outreach.py` — POST/GET/PATCH `/outreach`, POST `/outreach/{id}/send`; error recovery: job set to `error` on agent or send failure |
 | 6 — Frontend Outreach | `OutreachPanel.jsx`, `Outreach.jsx`, `Settings.jsx`; Email HR button wired in `JobCard.jsx`; routes in `App.jsx` |
 
-**Test coverage:** 64 backend + 18 frontend = **82 tests, all passing** on `main`.
-
 ---
 
 ## Current State
@@ -36,53 +41,47 @@ Implemented **Phase 3 — Cold Email Outreach** in full across 6 tasks on `main`
 |---|---|
 | 1 — Foundation Dashboard | ✅ Complete |
 | 2 — Application Flow | ✅ Complete |
-| 3 — Cold Email Outreach | ✅ Complete (merged this session) |
-| 4 — Webhook Integration | 🔄 In progress (Tasks 1–2 complete) |
+| 3 — Cold Email Outreach | ✅ Complete |
+| 4 — Webhook Integration | ✅ Complete |
 
-**New files added this phase:**
+**All phases complete. Full system operational.**
+
+**New files added in Phase 4:**
 ```
-backend/tools/hr_finder.py
-backend/tools/email_tools.py
-backend/routers/auth.py
-backend/routers/outreach.py
-backend/agents/outreach.py
-backend/tests/test_hr_finder.py
-backend/tests/test_email_tools.py
-backend/tests/test_auth_router.py
-backend/tests/test_outreach_agent.py
-backend/tests/test_outreach_router.py
-frontend/src/components/OutreachPanel.jsx
-frontend/src/components/OutreachPanel.test.jsx
-frontend/src/pages/Outreach.jsx
-frontend/src/pages/Settings.jsx
+backend/agents/orchestrator.py
+backend/tests/test_orchestrator.py
+backend/routers/webhook.py
+backend/tests/test_webhook_router.py
 ```
 
-**Modified files:**
+**Modified files in Phase 4:**
 ```
-backend/models.py        (OAuthToken, Outreach models added)
-backend/main.py          (auth + outreach routers registered)
-backend/requirements.txt (google-auth, google-auth-oauthlib, google-api-python-client, msal)
-frontend/src/api/client.js           (5 new exports)
-frontend/src/components/JobCard.jsx  (Email HR button wired, OutreachPanel inline)
-frontend/src/App.jsx                 (/outreach and /settings routes added)
+backend/main.py   (webhook router registered)
 ```
 
 **Known technical debt (not blocking):**
-- `datetime.utcnow()` deprecated in Python 3.12+ — affects models.py, email_tools.py, routers — cleanup pass needed
+- `datetime.utcnow()` deprecated in Python 3.12+ — affects `models.py`, `email_tools.py`, routers — cleanup pass needed
 - `OutreachPanel` fires PATCH on every keystroke (no debounce) — consistent with ReviewPanel pattern, acceptable for now
+- `score_job` creates a new `anthropic.Anthropic()` client on every call (same pattern as `job_scout.py` — project-wide cleanup opportunity)
+- `jobs.url` has both column-level `unique=True` and a named `UniqueConstraint` in `__table_args__` — harmless for SQLite, would create duplicate constraints on PostgreSQL
 
 ---
 
 ## Recommended Next Steps
 
-**Phase 4 — Webhook Integration** is next. Plan file: `docs/superpowers/plans/2026-03-22-phase4-webhook-integration.md`.
+All four planned phases are complete. The full system is ready to use:
 
-Key things to know going into Phase 4:
-- Webhook endpoint: `POST /webhook/job-alerts` — receives job alerts from external agents
-- Jobs received via webhook should be de-duplicated by URL
-- `WEBHOOK_SECRET` env var for HMAC signature verification
-- `WEBHOOK_BYPASS_THRESHOLD=true` allows jobs to bypass the `JOB_MATCH_THRESHOLD` score filter
+```bash
+# Start backend (inside devcontainer or via docker compose)
+uvicorn main:app --reload --port 8000
 
-Use `superpowers:subagent-driven-development` to execute Phase 4 task by task.
+# Start frontend
+npm run dev
+```
 
-**Phase 4 Tasks 1–2 are done.** Next is Task 3 — Verify Settings page (frontend webhook URL/secret display) and any remaining Phase 4 tasks per the plan in `docs/superpowers/plans/2026-03-22-phase4-webhook-integration.md`.
+**Potential follow-up improvements:**
+- Fix `datetime.utcnow()` deprecation warnings across the codebase
+- Upgrade webhook auth to HMAC-SHA256 signature verification (currently simple string equality)
+- Add a startup warning log when `WEBHOOK_SECRET` is not configured
+- Add payload schema display to the Settings page for external agent developer reference
+- Add async/batch scoring to webhook router for large job payloads
