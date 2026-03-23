@@ -6,6 +6,7 @@ import { ReviewPanel } from './ReviewPanel'
 export function JobCard({ job, onDelete }) {
   const [applying, setApplying] = useState(false)
   const [application, setApplication] = useState(null)
+  const [applyError, setApplyError] = useState(null)
 
   return (
     <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 12 }}>
@@ -30,11 +31,13 @@ export function JobCard({ job, onDelete }) {
           <button>View Job</button>
         </a>
         <button
-          disabled={applying || ['applying', 'applied'].includes(job.status)}
+          disabled={applying || ['applying', 'applied', 'emailing', 'emailed'].includes(job.status)}
           onClick={() => {
             setApplying(true)
+            setApplyError(null)
             triggerApply(job.id)
               .then(app => setApplication(app))
+              .catch(err => setApplyError(err?.response?.data?.detail || 'Apply failed. Please try again.'))
               .finally(() => setApplying(false))
           }}
         >
@@ -43,6 +46,9 @@ export function JobCard({ job, onDelete }) {
         <button disabled title="Available in Phase 3">Email HR</button>
         <button onClick={() => onDelete?.(job.id)} aria-label="Dismiss">Dismiss</button>
       </div>
+      {applyError && (
+        <p style={{ color: '#dc2626', fontSize: 13, margin: '8px 0 0' }}>{applyError}</p>
+      )}
       {application && (
         <ReviewPanel
           application={application}

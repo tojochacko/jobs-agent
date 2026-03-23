@@ -3,6 +3,7 @@ import { updateApplication, openInBrowser } from '../api/client'
 
 export function ReviewPanel({ application, onClose, onStatusChange }) {
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
 
   const fields = (() => {
     try { return Object.entries(JSON.parse(application.form_payload || '{}')) }
@@ -11,8 +12,10 @@ export function ReviewPanel({ application, onClose, onStatusChange }) {
 
   const handleMarkSubmitted = () => {
     setSubmitting(true)
+    setSubmitError(null)
     updateApplication(application.id, { status: 'submitted' })
       .then((updated) => { onStatusChange?.(updated); onClose() })
+      .catch(() => setSubmitError('Failed to update status. Please try again.'))
       .finally(() => setSubmitting(false))
   }
 
@@ -64,20 +67,25 @@ export function ReviewPanel({ application, onClose, onStatusChange }) {
           </div>
         )
         : (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => openInBrowser(application.id)}
-              style={{ padding: '8px 16px', cursor: 'pointer' }}
-            >
-              Open in Browser (Pre-filled)
-            </button>
-            <button
-              onClick={handleMarkSubmitted}
-              disabled={submitting}
-              style={{ padding: '8px 16px', cursor: 'pointer' }}
-            >
-              {submitting ? 'Saving…' : 'Mark as Submitted'}
-            </button>
+          <div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => openInBrowser(application.id).catch(() => {})}
+                style={{ padding: '8px 16px', cursor: 'pointer' }}
+              >
+                Open in Browser (Pre-filled)
+              </button>
+              <button
+                onClick={handleMarkSubmitted}
+                disabled={submitting}
+                style={{ padding: '8px 16px', cursor: 'pointer' }}
+              >
+                {submitting ? 'Saving…' : 'Mark as Submitted'}
+              </button>
+            </div>
+            {submitError && (
+              <p style={{ color: '#dc2626', fontSize: 13, margin: '8px 0 0' }}>{submitError}</p>
+            )}
           </div>
         )
       }
