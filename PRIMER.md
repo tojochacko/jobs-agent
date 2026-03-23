@@ -1,6 +1,20 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-23)
+## What Was Done This Session (2026-03-23, Phase 3 Task 1)
+
+Implemented **Phase 3 Task 1 — OAuthToken and Outreach Models** using TDD on `main`.
+
+| Step | What was done |
+|---|---|
+| Tests written | Added `test_create_oauth_token` and `test_create_outreach` to `backend/tests/test_models.py` |
+| Red phase | Confirmed `ImportError` failures before adding models |
+| Models added | `OAuthToken` and `Outreach` appended to `backend/models.py` |
+| Green phase | All 7 model tests pass |
+| Committed | `feat: add OAuthToken and Outreach models` |
+
+---
+
+## Previous Session (2026-03-23) — Phase 2 Complete
 
 Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks on `feature/phase2-application-flow` (merged to `main`).
 
@@ -24,7 +38,7 @@ Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks o
 |---|---|
 | 1 — Foundation Dashboard | ✅ Complete |
 | 2 — Application Flow | ✅ Complete (merged this session) |
-| 3 — Cold Email Outreach | 🔲 Planned |
+| 3 — Cold Email Outreach | 🔄 In progress (Task 1 done) |
 | 4 — Webhook Integration | 🔲 Planned |
 
 **New files added this phase:**
@@ -39,7 +53,7 @@ frontend/src/components/ReviewPanel.jsx
 
 **Modified files:**
 ```
-backend/models.py        (Application model added)
+backend/models.py        (Application model added; OAuthToken + Outreach models added in Phase 3 Task 1)
 backend/main.py          (applications router registered)
 backend/Dockerfile       (Chromium system deps added)
 backend/requirements.txt (fpdf2, pdfminer.six, python-docx, playwright added)
@@ -54,10 +68,11 @@ frontend/src/App.jsx                 (/applications route added)
 
 **Phase 3 — Cold Email Outreach** is next. Plan file: `docs/superpowers/plans/2026-03-22-phase3-cold-email-outreach.md`.
 
-Key things to know going into Phase 3:
+Key things to know going into Phase 3 Task 2+:
 - `tailor_resume()` already supports `output_format="pdf"` for email attachments — pass `model=settings.OUTREACH_MODEL` from the Outreach agent
-- The `OAuthToken` model is referenced in CLAUDE.md but not yet in `models.py` — Phase 3 Task 1 must add it
+- `OAuthToken` and `Outreach` models are now in `models.py` — Task 1 complete
 - OAuth tokens are stored in the DB (`oauth_tokens` table), not in `.env`
 - Email provider selected via `EMAIL_PROVIDER` env var (`gmail` or `outlook`)
+- Next task: Task 2 — HR Contact Finder Tool (`backend/tools/serp.py` additions for HR lookup)
 
 Use `superpowers:subagent-driven-development` to execute Phase 3 task by task.
