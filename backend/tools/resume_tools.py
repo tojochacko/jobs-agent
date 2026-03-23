@@ -7,17 +7,22 @@ from backend.config import settings
 
 def _read_resume(filepath: str) -> str:
     """Read resume file content as plain text. Supports .txt, .pdf, .docx."""
-    path = Path(filepath)
-    suffix = path.suffix.lower()
-    if suffix == ".pdf":
-        from pdfminer.high_level import extract_text
-        return extract_text(str(path))
-    elif suffix in (".docx", ".doc"):
-        from docx import Document
-        doc = Document(str(path))
-        return "\n".join(p.text for p in doc.paragraphs)
-    else:
-        return path.read_text(errors="ignore")
+    try:
+        path = Path(filepath)
+        suffix = path.suffix.lower()
+        if suffix == ".pdf":
+            from pdfminer.high_level import extract_text
+            return extract_text(str(path))
+        elif suffix == ".docx":
+            from docx import Document
+            doc = Document(str(path))
+            return "\n".join(p.text for p in doc.paragraphs)
+        elif suffix == ".doc":
+            raise ValueError("Legacy .doc format is not supported. Please convert to .docx or PDF.")
+        else:
+            return path.read_text(errors="ignore")
+    except (FileNotFoundError, OSError) as e:
+        raise RuntimeError(f"Could not read resume file: {filepath} — {e}")
 
 
 def _write_pdf(text: str, output_path: str) -> None:
@@ -26,7 +31,8 @@ def _write_pdf(text: str, output_path: str) -> None:
     pdf.add_page()
     pdf.set_font("Helvetica", size=11)
     for line in text.split("\n"):
-        pdf.multi_cell(0, 6, line)
+        safe_line = line.encode("latin-1", errors="replace").decode("latin-1")
+        pdf.multi_cell(0, 6, safe_line)
     pdf.output(output_path)
 
 
@@ -39,18 +45,21 @@ def tailor_resume(
     job_description: str,
     master_resume_path: str,
     output_format: Literal["text", "pdf"],
-    output_path: str,
+    output_path: str = "",
+    model: str | None = None,
 ) -> str:
     """
     Tailor the master resume for a specific job.
 
     output_format="text": returns tailored resume as a plain text string (output_path ignored)
     output_format="pdf": writes PDF to output_path and returns output_path
+    model: optional model override (e.g. pass settings.OUTREACH_MODEL from the Outreach agent).
+           Defaults to settings.APPLICATOR_MODEL if not provided.
     """
     resume_content = _read_resume(master_resume_path)
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     response = client.messages.create(
-        model=settings.APPLICATOR_MODEL,
+        model=model or settings.APPLICATOR_MODEL,
         max_tokens=2048,
         system=TAILOR_SYSTEM,
         messages=[
@@ -65,6 +74,9 @@ def tailor_resume(
         if getattr(block, "type", None) == "text":
             tailored_text = block.text
             break
+
+    if not tailored_text:
+        raise RuntimeError("LLM returned no text content for resume tailoring")
 
     if output_format == "text":
         return tailored_text
