@@ -23,7 +23,8 @@ def webhook_headers(monkeypatch):
     return {"X-Webhook-Secret": "test-secret"}
 
 
-def test_webhook_requires_secret(client):
+def test_webhook_requires_secret(client, monkeypatch):
+    monkeypatch.setattr("backend.routers.webhook.settings.WEBHOOK_SECRET", "test-secret")
     response = client.post("/webhook/job-alerts", json=VALID_PAYLOAD)
     assert response.status_code == 401
 
