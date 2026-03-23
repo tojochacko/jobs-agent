@@ -1,6 +1,6 @@
 # backend/tests/test_hr_finder.py
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 
 MOCK_SEARCH_RESULTS = [
@@ -13,7 +13,16 @@ MOCK_SEARCH_RESULTS = [
 
 
 def test_find_hr_contact_returns_dict():
-    with patch("backend.tools.hr_finder.search_people", return_value=MOCK_SEARCH_RESULTS):
+    mock_block = MagicMock()
+    mock_block.type = "text"
+    mock_block.text = '{"hr_name": "Jane Smith", "hr_email": "j.smith@acme.com", "hr_confidence": "search_result"}'
+    mock_response = MagicMock()
+    mock_response.content = [mock_block]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    with patch("backend.tools.hr_finder.search_people", return_value=MOCK_SEARCH_RESULTS), \
+         patch("backend.tools.hr_finder.anthropic.Anthropic", return_value=mock_client):
         from backend.tools.hr_finder import find_hr_contact
         result = find_hr_contact(company="Acme Corp", job_title="Python Engineer")
     assert isinstance(result, dict)
