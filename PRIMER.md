@@ -1,6 +1,27 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-23, Phase 3 Task 5)
+## What Was Done This Session (2026-03-23, Phase 3 Task 6)
+
+Implemented **Phase 3 Task 6 — Frontend Outreach Panel and Pages** using TDD on `main`.
+
+| Step | What was done |
+|---|---|
+| Pre-read | Verified `client.js` exports, `JobCard.jsx` patterns, `App.jsx` router structure, `ReviewPanel.jsx` component style |
+| API client updated | Added 5 exports to `client.js`: `triggerOutreach`, `getOutreach`, `patchOutreach`, `sendOutreach`, `connectEmail` |
+| Test written | Created `OutreachPanel.test.jsx` with 2 tests: renders HR contact/cover letter, calls `sendOutreach` on Send click |
+| Red phase | Confirmed failure: `sendOutreach does not exist` (module not yet in container) |
+| `OutreachPanel.jsx` created | Shows editable HR name/email (with confidence badge), editable cover letter textarea, resume attachment display, Send Email button; calls `patchOutreach` on field change and `sendOutreach` on send |
+| `Outreach.jsx` created | Lists all outreach records with job title/company, HR contact, status badge, sent timestamp |
+| `Settings.jsx` created | Email OAuth connect button (calls `connectEmail`, opens auth URL), webhook URL + secret display |
+| `App.jsx` updated | Added imports and routes for `/outreach` and `/settings`; nav links added |
+| `JobCard.jsx` updated | Replaced disabled "Email HR" button with functional version that calls `triggerOutreach`; added `OutreachPanel` below cards when outreachRecord is set |
+| File copy note | Docker does not volume-mount source; all new/updated files must be `docker cp`'d to the container before tests run |
+| Green phase | 2 OutreachPanel tests pass; all 18 frontend tests pass; all 63 backend tests pass |
+| Committed | `feat: add OutreachPanel, Outreach history page, and Settings page` |
+
+---
+
+## Previous Session (2026-03-23, Phase 3 Task 5)
 
 Implemented **Phase 3 Task 5 — Outreach Router** using TDD on `main`.
 
@@ -107,7 +128,7 @@ Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks o
 |---|---|
 | 1 — Foundation Dashboard | ✅ Complete |
 | 2 — Application Flow | ✅ Complete (merged this session) |
-| 3 — Cold Email Outreach | 🔄 In progress (Tasks 1–5 done) |
+| 3 — Cold Email Outreach | 🔄 In progress (Tasks 1–6 done) |
 | 4 — Webhook Integration | 🔲 Planned |
 
 **New files added this phase:**
@@ -145,6 +166,7 @@ Key things to know going into Phase 3 Task 2+:
 - `get_valid_token(provider, db)` is in `email_tools.py` — call this from Outreach agent before sending
 - `send_email(to, subject, body, attachment_path, db)` is the top-level dispatch function (auto-selects Gmail/Outlook via `settings.EMAIL_PROVIDER`)
 - Auth endpoints live at `POST /auth/email/connect` and `GET /auth/email/callback`
-- Next task: Task 6 — Frontend Outreach Panel and Pages
+- Phase 3 Task 6 (Frontend) is now complete — all outreach UI is wired end-to-end
+- Next task: Phase 3 Task 7 (if any) or Phase 4 — Webhook Integration
 
-Use `superpowers:subagent-driven-development` to execute Phase 3 task by task.
+Use `superpowers:subagent-driven-development` to execute Phase 3/4 task by task.
