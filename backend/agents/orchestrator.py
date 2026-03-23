@@ -1,6 +1,9 @@
 import json
+import logging
 import anthropic
 from backend.config import settings
+
+logger = logging.getLogger(__name__)
 
 SCORE_SYSTEM = """You are a job relevance scorer. Given a job posting and user preferences, return ONLY a single decimal number between 0.0 and 1.0 representing how well the job matches the preferences.
 
@@ -40,6 +43,7 @@ def score_job(job_data: dict, preferences: dict) -> float:
                 raw = block.text.strip()
                 score = float(raw)
                 return max(0.0, min(1.0, score))  # clamp to [0, 1]
-    except (ValueError, TypeError, Exception):
+    except (ValueError, TypeError, Exception) as e:
+        logger.warning("score_job failed: %s", e)
         pass
     return 0.0
