@@ -74,6 +74,9 @@ def test_webhook_bypass_threshold_stores_all(client, db_session, webhook_headers
         response = client.post("/webhook/job-alerts", json=VALID_PAYLOAD, headers=webhook_headers)
     assert response.status_code == 200
     assert response.json()["inserted"] == 1
+    jobs = db_session.query(Job).all()
+    assert len(jobs) == 1
+    assert jobs[0].match_score == 0.2  # score is stored even under bypass
 
 
 def test_webhook_deduplicates_by_url(client, db_session, webhook_headers, monkeypatch):

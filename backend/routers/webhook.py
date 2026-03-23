@@ -55,7 +55,8 @@ def receive_job_alerts(
             skipped_score += 1
             continue
         else:
-            # bypass_threshold=True or no preferences with bypass — store with score 0 if no prefs
+            # bypass_threshold=True: store regardless of score.
+            # Still score when preferences exist — the score is saved for display purposes.
             match_score = score_job(job_dict, preferences) if preferences else 0.0
 
         job = Job(

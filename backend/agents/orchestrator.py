@@ -43,7 +43,7 @@ def score_job(job_data: dict, preferences: dict) -> float:
                 raw = block.text.strip()
                 score = float(raw)
                 return max(0.0, min(1.0, score))  # clamp to [0, 1]
-    except (ValueError, TypeError, Exception) as e:
+    except Exception as e:
         logger.warning("score_job failed: %s", e)
         pass
     return 0.0
