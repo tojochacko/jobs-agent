@@ -1,5 +1,15 @@
 # JobApplierAgent — Session Primer
 
+## What Was Done (2026-03-23, Session 7)
+
+- Implemented **Task 7 of Phase 2**: Applications Pipeline page (frontend).
+  - Created `frontend/src/pages/Applications.test.jsx` with 2 TDD tests (pipeline headers render, application appears in correct stage).
+  - Created `frontend/src/pages/Applications.jsx`: Kanban-style pipeline with 4 columns — Reviewing (pending/reviewing), Manual Required (manual_required), Applied (submitted), Response (rejected/interviewing/offered). Fetches both `getApplications()` and `getJobs()` in parallel, maps job metadata by ID for display.
+  - Updated `frontend/src/App.jsx`: imported `Applications`, added `<Link to="/applications">Applications</Link>` nav link, added `<Route path="/applications" element={<Applications />} />` route.
+- Full frontend test suite: **16 tests passing** (14 existing + 2 new), no regressions.
+- Full backend test suite: **46 tests passing**, no regressions.
+- Committed as `feat: add Applications pipeline page` on branch `feature/phase2-application-flow`.
+
 ## What Was Done (2026-03-23, Session 6)
 
 - Implemented **Task 6 of Phase 2**: ReviewPanel component and Apply flow (frontend).
@@ -74,14 +84,19 @@
   - Task 4 (Applicator Agent): DONE — `backend/agents/applicator.py` committed.
   - Task 5 (Applications Router): DONE — `backend/routers/applications.py` committed.
   - Task 6 (ReviewPanel + Apply Flow): DONE — `frontend/src/components/ReviewPanel.jsx` committed.
-  - Task 7 (Applications Pipeline Page): Pending.
+  - Task 7 (Applications Pipeline Page): DONE — `frontend/src/pages/Applications.jsx` committed.
+- **Phase 2 (Application Flow): ALL TASKS COMPLETE.**
 - **Phase 3 (Cold Email Outreach):** Planned.
 - **Phase 4 (Webhook Integration):** Planned.
-- Full backend test suite: 44 tests passing, no regressions.
-- Full frontend test suite: 14 tests passing, no regressions.
+- Full backend test suite: 46 tests passing, no regressions.
+- Full frontend test suite: 16 tests passing, no regressions.
 - Active worktree: `/Users/tojochacko/code/JobApplierAgent/.worktrees/phase2-application-flow/` on branch `feature/phase2-application-flow`.
 
 ## Next Steps
 
-- Phase 2 Task 7: Applications Pipeline page (frontend) — list all applications with status badges, notes editing, link back to job.
-- Once Phase 2 is stable, begin Phase 3 (Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation).
+- Phase 2 is now complete — consider merging `feature/phase2-application-flow` into `main`.
+- Begin Phase 3: Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation.
+  - Task 1: Email tools (`backend/tools/email_tools.py`) — Gmail/Outlook OAuth send.
+  - Task 2: Outreach Agent (`backend/agents/outreach.py`) — SerpAPI HR lookup + email draft.
+  - Task 3: Outreach Router (`backend/routers/outreach.py`) — POST/GET/PATCH /outreach, POST /outreach/{id}/send.
+  - Task 4: Outreach page (`frontend/src/pages/Outreach.jsx`) — cold email history UI.
