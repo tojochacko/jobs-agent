@@ -19,3 +19,9 @@ export const triggerApply = (jobId) => axios.post('/applications', { job_id: job
 export const getApplications = () => axios.get('/applications').then(r => r.data)
 export const updateApplication = (id, data) => axios.patch(`/applications/${id}`, data).then(r => r.data)
 export const openInBrowser = (appId) => axios.post(`/applications/${appId}/open`).then(r => r.data)
+
+export const triggerOutreach = (jobId) => axios.post('/outreach', { job_id: jobId }).then(r => r.data)
+export const getOutreach = () => axios.get('/outreach').then(r => r.data)
+export const patchOutreach = (id, data) => axios.patch(`/outreach/${id}`, data).then(r => r.data)
+export const sendOutreach = (id) => axios.post(`/outreach/${id}/send`).then(r => r.data)
+export const connectEmail = () => axios.post('/auth/email/connect').then(r => r.data)

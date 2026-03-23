@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { StatusBadge } from './StatusBadge'
-import { triggerApply } from '../api/client'
+import { triggerApply, triggerOutreach } from '../api/client'
 import { ReviewPanel } from './ReviewPanel'
+import { OutreachPanel } from './OutreachPanel'
 
 export function JobCard({ job, onDelete }) {
   const [applying, setApplying] = useState(false)
   const [application, setApplication] = useState(null)
   const [applyError, setApplyError] = useState(null)
+  const [outreaching, setOutreaching] = useState(false)
+  const [outreachRecord, setOutreachRecord] = useState(null)
 
   return (
     <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 12 }}>
@@ -43,7 +46,18 @@ export function JobCard({ job, onDelete }) {
         >
           {applying ? 'Preparing…' : 'Apply'}
         </button>
-        <button disabled title="Available in Phase 3">Email HR</button>
+        <button
+          disabled={outreaching || ['emailing', 'emailed'].includes(job.status)}
+          onClick={() => {
+            setOutreaching(true)
+            triggerOutreach(job.id)
+              .then(r => setOutreachRecord(r))
+              .catch(err => alert(err.response?.data?.detail || 'Outreach failed'))
+              .finally(() => setOutreaching(false))
+          }}
+        >
+          {outreaching ? 'Preparing…' : 'Email HR'}
+        </button>
         <button onClick={() => onDelete?.(job.id)} aria-label="Dismiss">Dismiss</button>
       </div>
       {applyError && (
@@ -54,6 +68,13 @@ export function JobCard({ job, onDelete }) {
           application={application}
           onClose={() => setApplication(null)}
           onStatusChange={(updated) => setApplication(updated)}
+        />
+      )}
+      {outreachRecord && (
+        <OutreachPanel
+          record={outreachRecord}
+          onClose={() => setOutreachRecord(null)}
+          onSent={(updated) => setOutreachRecord(updated)}
         />
       )}
     </div>
