@@ -20,7 +20,7 @@ def run_applicator(job_id: int, job_url: str, job_description: str, resume_path:
     """
     # Step 1: Scrape the application form
     form_result = fetch_application_form(job_url)
-    if form_result.get("status") == "manual_required":
+    if "fields" not in form_result:
         logger.info(f"Form scraping returned manual_required for job {job_id}: {job_url}")
         return {"status": "manual_required", "url": job_url}
 
@@ -47,7 +47,7 @@ def run_applicator(job_id: int, job_url: str, job_description: str, resume_path:
                 {
                     "role": "user",
                     "content": (
-                        f"Form fields:\n{json.dumps(form_result['fields'], indent=2)}\n\n"
+                        f"Form fields:\n{json.dumps(form_result.get('fields', []), indent=2)}\n\n"
                         f"Tailored Resume:\n{tailored}\n\n"
                         "Return a JSON object mapping each field name to its value."
                     ),
