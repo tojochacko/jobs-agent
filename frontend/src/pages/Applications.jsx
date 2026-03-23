@@ -12,6 +12,7 @@ export function Applications() {
   const [applications, setApplications] = useState([])
   const [jobs, setJobs] = useState({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     Promise.all([getApplications(), getJobs()])
@@ -19,10 +20,12 @@ export function Applications() {
         setApplications(apps)
         setJobs(Object.fromEntries(jobList.map(j => [j.id, j])))
       })
+      .catch(() => setError('Failed to load applications. Please refresh.'))
       .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <p>Loading applications…</p>
+  if (error) return <p style={{ color: '#dc2626' }}>{error}</p>
 
   return (
     <div>
