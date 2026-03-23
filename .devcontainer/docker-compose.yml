@@ -1,0 +1,15 @@
+services:
+  backend:
+    volumes:
+      # `..` resolves from the project directory (JobApplierAgent/), so `..` = ~/code/.
+      # Mounting ~/code/ at /workspaces makes the project available at /workspaces/JobApplierAgent/,
+      # which matches workspaceFolder in devcontainer.json.
+      - ..:/workspaces:cached
+    command: sleep infinity
+    healthcheck:
+      disable: true
+
+  frontend:
+    depends_on:
+      backend:
+        condition: service_started

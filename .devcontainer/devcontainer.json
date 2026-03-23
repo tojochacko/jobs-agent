@@ -1,0 +1,47 @@
+{
+  "name": "JobApplierAgent",
+
+  // Extend the root docker-compose.yml with devcontainer-specific overrides
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.yml"
+  ],
+
+  // Attach VS Code to the backend service
+  "service": "backend",
+
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  "remoteEnv": {
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+  },
+
+  // Forward both service ports so the browser can reach them from the host
+  "forwardPorts": [8000, 5173],
+
+  "postCreateCommand": "pip install -r /app/requirements.txt",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylance",
+        "charliermarsh.ruff",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        }
+      }
+    }
+  },
+
+  // Keep containers running when VS Code closes
+  "shutdownAction": "stopCompose"
+}
