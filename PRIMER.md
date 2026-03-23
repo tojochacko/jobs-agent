@@ -1,5 +1,17 @@
 # JobApplierAgent — Session Primer
 
+## What Was Done (2026-03-23, Session 5)
+
+- Implemented **Task 5 of Phase 2**: the Applications Router (`backend/routers/applications.py`).
+  - `POST /applications` — triggers the Applicator Agent for a job; sets `job.status = "applying"` immediately; returns 409 if already `applying` or `applied`; stores `Application` record with `status="pending"` (or `"manual_required"` for Playwright fallback).
+  - `GET /applications` — lists all application records.
+  - `PATCH /applications/{id}` — updates `status`/`notes`; when `status="submitted"` sets `applied_at` and transitions `job.status = "applied"`.
+  - `POST /applications/{id}/open` — launches Playwright supervised browser (daemon thread) for manual form submission.
+  - Registered the router in `backend/main.py`.
+- Added 6 TDD tests in `backend/tests/test_applications_router.py`: trigger flow, duplicate 409, manual_required, list, patch-to-submitted, not-found — all passing.
+- Full backend test suite: **44 tests passing**, no regressions.
+- Committed as `feat: add applications router with apply trigger and status tracking` on branch `feature/phase2-application-flow`.
+
 ## What Was Done (2026-03-23, Session 4)
 
 - Implemented **Task 4 of Phase 2**: the Applicator Agent (`backend/agents/applicator.py`).
@@ -50,16 +62,16 @@
   - Task 2 (Playwright Tools): DONE — `backend/tools/playwright_tools.py` committed.
   - Task 3 (Application Model): DONE — `Application` ORM model in `backend/models.py` committed.
   - Task 4 (Applicator Agent): DONE — `backend/agents/applicator.py` committed.
-  - Task 5 (Applications Router): Pending.
+  - Task 5 (Applications Router): DONE — `backend/routers/applications.py` committed.
   - Task 6 (ReviewPanel + Apply Flow): Pending.
   - Task 7 (Applications Pipeline Page): Pending.
 - **Phase 3 (Cold Email Outreach):** Planned.
 - **Phase 4 (Webhook Integration):** Planned.
-- Full backend test suite: 38 tests passing, no regressions.
+- Full backend test suite: 44 tests passing, no regressions.
 - Active worktree: `/Users/tojochacko/code/JobApplierAgent/.worktrees/phase2-application-flow/` on branch `feature/phase2-application-flow`.
 
 ## Next Steps
 
-- Phase 2 Task 5: Implement Applications Router (`backend/routers/applications.py`).
-- Phase 2 Tasks 6–7: Frontend ReviewPanel component and Applications Pipeline page.
+- Phase 2 Task 6: Implement ReviewPanel component + Apply flow (frontend).
+- Phase 2 Task 7: Applications Pipeline page (frontend).
 - Once Phase 2 is stable, begin Phase 3 (Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation).
