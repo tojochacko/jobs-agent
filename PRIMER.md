@@ -1,124 +1,19 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-23, Phase 3 Task 6)
+## What Was Done This Session (2026-03-23)
 
-Implemented **Phase 3 Task 6 — Frontend Outreach Panel and Pages** using TDD on `main`.
-
-| Step | What was done |
-|---|---|
-| Pre-read | Verified `client.js` exports, `JobCard.jsx` patterns, `App.jsx` router structure, `ReviewPanel.jsx` component style |
-| API client updated | Added 5 exports to `client.js`: `triggerOutreach`, `getOutreach`, `patchOutreach`, `sendOutreach`, `connectEmail` |
-| Test written | Created `OutreachPanel.test.jsx` with 2 tests: renders HR contact/cover letter, calls `sendOutreach` on Send click |
-| Red phase | Confirmed failure: `sendOutreach does not exist` (module not yet in container) |
-| `OutreachPanel.jsx` created | Shows editable HR name/email (with confidence badge), editable cover letter textarea, resume attachment display, Send Email button; calls `patchOutreach` on field change and `sendOutreach` on send |
-| `Outreach.jsx` created | Lists all outreach records with job title/company, HR contact, status badge, sent timestamp |
-| `Settings.jsx` created | Email OAuth connect button (calls `connectEmail`, opens auth URL), webhook URL + secret display |
-| `App.jsx` updated | Added imports and routes for `/outreach` and `/settings`; nav links added |
-| `JobCard.jsx` updated | Replaced disabled "Email HR" button with functional version that calls `triggerOutreach`; added `OutreachPanel` below cards when outreachRecord is set |
-| File copy note | Docker does not volume-mount source; all new/updated files must be `docker cp`'d to the container before tests run |
-| Green phase | 2 OutreachPanel tests pass; all 18 frontend tests pass; all 63 backend tests pass |
-| Committed | `feat: add OutreachPanel, Outreach history page, and Settings page` |
-
----
-
-## Previous Session (2026-03-23, Phase 3 Task 5)
-
-Implemented **Phase 3 Task 5 — Outreach Router** using TDD on `main`.
-
-| Step | What was done |
-|---|---|
-| Pre-read | Verified `Resume.filepath` field name, `settings.UPLOAD_DIR` already in `config.py`, `send_email` signature, `run_outreach` signature |
-| Tests written | Created `backend/tests/test_outreach_router.py` with 5 tests covering POST trigger, GET list, PATCH edit, POST send, and 400 on missing email |
-| Red phase | Confirmed 5 test failures (routes 404) before implementation |
-| Router implemented | Created `backend/routers/outreach.py` — POST `/outreach` (triggers outreach agent, stores draft), GET `/outreach` (list), PATCH `/outreach/{id}` (edit hr_name/hr_email/cover_letter only), POST `/outreach/{id}/send` (dispatches email, sets status=sent + sent_at) |
-| `main.py` updated | `outreach` router imported and registered with `app.include_router(outreach.router)` |
-| Green phase | All 5 new tests pass; all 63 backend tests pass (0 failures) |
-| Committed | `feat: add outreach router with draft, edit, and send flow` |
-| Note | Docker does not bind-mount source; files copied via `docker cp` |
-
----
-
-## Previous Session (2026-03-23, Phase 3 Task 4)
-
-Implemented **Phase 3 Task 4 — Outreach Agent** using TDD on `main`.
-
-| Step | What was done |
-|---|---|
-| Pre-read | Read `backend/tools/resume_tools.py` to verify `tailor_resume` signature and confirm `_read_resume` exists |
-| Tests written | Created `backend/tests/test_outreach_agent.py` with 2 tests: happy-path draft return and unknown-contact fallback |
-| Red phase | Confirmed `AttributeError: module 'backend.agents' has no attribute 'outreach'` for both tests |
-| `outreach.py` implemented | Created `backend/agents/outreach.py` — `generate_cover_letter()` (reads resume, calls Claude with salutation) and `run_outreach()` (find HR → generate cover letter → tailor resume as PDF → return dict) |
-| Key design | `tailor_resume(..., output_format="pdf")` returns `output_path`; `run_outreach` uses that return value as `resume_version_path` — matches what tests assert |
-| File copy | Both files copied with `docker compose cp` (Docker doesn't volume-mount source code) |
-| Green phase | 2 new tests pass; all 58 backend tests pass (0 failures) |
-| Committed | `feat: add Outreach agent with cover letter and HR contact discovery` |
-
----
-
-## Previous Session (2026-03-23, Phase 3 Task 3)
-
-Implemented **Phase 3 Task 3 — OAuth Token Management + Auth Router** using TDD on `main`.
-
-| Step | What was done |
-|---|---|
-| Dependencies installed | `google-auth`, `google-auth-oauthlib`, `google-api-python-client`, `msal` installed in container and added to `requirements.txt` |
-| Tests written | Created `backend/tests/test_email_tools.py` (3 tests) and `backend/tests/test_auth_router.py` (2 tests) |
-| Red phase | Confirmed `ModuleNotFoundError` for all 5 tests before implementation |
-| `email_tools.py` implemented | `get_valid_token()` — loads token from DB, refreshes if expired, persists update; `send_email_gmail()`, `send_email_outlook()`, `send_email()` dispatch functions |
-| `auth.py` router implemented | `POST /auth/email/connect` returns OAuth authorization URL; `GET /auth/email/callback` exchanges code, upserts `OAuthToken` in DB |
-| `main.py` updated | `auth` router imported and registered with `app.include_router(auth.router)` |
-| Note | Docker does not volume-mount source code; all files must be copied with `docker compose cp` |
-| Green phase | All 5 new tests pass; all 56 backend tests pass (0 failures) |
-| Committed | `feat: add OAuth token management and email send tools` |
-
----
-
-## Previous Session (2026-03-23, Phase 3 Task 2)
-
-Implemented **Phase 3 Task 2 — HR Contact Finder Tool** using TDD on `main`.
-
-| Step | What was done |
-|---|---|
-| Tests written | Created `backend/tests/test_hr_finder.py` with 3 tests covering dict return shape, empty-results fallback, and search exception handling |
-| Red phase | Confirmed `AttributeError` (module not found) for all 3 tests before implementation |
-| Implementation | Created `backend/tools/hr_finder.py` — `find_hr_contact(company, job_title)` searches SerpAPI via `search_people`, feeds snippets to Claude (`OUTREACH_MODEL`) to extract name/email/confidence; falls back to `hr_confidence="unknown"` on any error (search or LLM) |
-| serp.py verified | `search_people(query: str, num_results: int = 5)` — call signature confirmed before use |
-| config.py verified | `settings.OUTREACH_MODEL` already present — no changes needed |
-| Claude error handling | Added try/except around the Anthropic client call so tests without a real API key still pass |
-| Green phase | All 3 new tests pass; all 51 backend tests pass |
-| Committed | `feat: add HR contact finder tool via SerpAPI + Claude extraction` |
-
----
-
-## Previous Session (2026-03-23, Phase 3 Task 1)
-
-Implemented **Phase 3 Task 1 — OAuthToken and Outreach Models** using TDD on `main`.
-
-| Step | What was done |
-|---|---|
-| Tests written | Added `test_create_oauth_token` and `test_create_outreach` to `backend/tests/test_models.py` |
-| Red phase | Confirmed `ImportError` failures before adding models |
-| Models added | `OAuthToken` and `Outreach` appended to `backend/models.py` |
-| Green phase | All 7 model tests pass |
-| Committed | `feat: add OAuthToken and Outreach models` |
-
----
-
-## Previous Session (2026-03-23) — Phase 2 Complete
-
-Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks on `feature/phase2-application-flow` (merged to `main`).
+Implemented **Phase 3 — Cold Email Outreach** in full across 6 tasks on `main`.
 
 | Task | What was built |
 |---|---|
-| 1 — Resume Tailoring Tool | `backend/tools/resume_tools.py` — `tailor_resume()` with text/PDF modes, .txt/.pdf/.docx support, hardened error handling, optional `model` param |
-| 2 — Playwright Tools | `backend/tools/playwright_tools.py` — `fetch_application_form()` + `open_prefilled_form()`; Dockerfile updated with Chromium system deps |
-| 3 — Application Model | `Application` ORM model added to `backend/models.py` |
-| 4 — Applicator Agent | `backend/agents/applicator.py` — `run_applicator()`: scrape form → tailor resume → LLM field mapping |
-| 5 — Applications Router | `backend/routers/applications.py` — POST/GET/PATCH /applications + open-in-browser endpoint; error recovery sets job to `error` on agent failure |
-| 6 — ReviewPanel + Apply Flow | `ReviewPanel.jsx`, Apply button wired in `JobCard.jsx`, error handling on all API calls |
-| 7 — Applications Pipeline Page | `Applications.jsx` Kanban pipeline (4 stages), `/applications` route in `App.jsx` |
+| 1 — OAuthToken + Outreach Models | `OAuthToken` and `Outreach` ORM models added to `backend/models.py` |
+| 2 — HR Contact Finder Tool | `backend/tools/hr_finder.py` — `find_hr_contact()` via SerpAPI + Claude extraction; all tests properly mocked |
+| 3 — OAuth Token Management + Auth Router | `backend/tools/email_tools.py` — `get_valid_token`, `send_email_gmail`, `send_email_outlook`, `send_email`; `backend/routers/auth.py` — `/auth/email/connect` + `/auth/email/callback`; deps: google-auth, msal |
+| 4 — Outreach Agent | `backend/agents/outreach.py` — `run_outreach()` + `generate_cover_letter()`; orchestrates HR lookup → cover letter → tailored PDF resume |
+| 5 — Outreach Router | `backend/routers/outreach.py` — POST/GET/PATCH `/outreach`, POST `/outreach/{id}/send`; error recovery: job set to `error` on agent or send failure |
+| 6 — Frontend Outreach | `OutreachPanel.jsx`, `Outreach.jsx`, `Settings.jsx`; Email HR button wired in `JobCard.jsx`; routes in `App.jsx` |
 
-**Test coverage:** 46 backend + 16 frontend = **62 tests, all passing** on `main`.
+**Test coverage:** 64 backend + 18 frontend = **82 tests, all passing** on `main`.
 
 ---
 
@@ -127,46 +22,52 @@ Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks o
 | Phase | Status |
 |---|---|
 | 1 — Foundation Dashboard | ✅ Complete |
-| 2 — Application Flow | ✅ Complete (merged this session) |
-| 3 — Cold Email Outreach | 🔄 In progress (Tasks 1–6 done) |
+| 2 — Application Flow | ✅ Complete |
+| 3 — Cold Email Outreach | ✅ Complete (merged this session) |
 | 4 — Webhook Integration | 🔲 Planned |
 
 **New files added this phase:**
 ```
-backend/agents/applicator.py
-backend/routers/applications.py
-backend/tools/playwright_tools.py
-backend/tools/resume_tools.py
-frontend/src/pages/Applications.jsx
-frontend/src/components/ReviewPanel.jsx
+backend/tools/hr_finder.py
+backend/tools/email_tools.py
+backend/routers/auth.py
+backend/routers/outreach.py
+backend/agents/outreach.py
+backend/tests/test_hr_finder.py
+backend/tests/test_email_tools.py
+backend/tests/test_auth_router.py
+backend/tests/test_outreach_agent.py
+backend/tests/test_outreach_router.py
+frontend/src/components/OutreachPanel.jsx
+frontend/src/components/OutreachPanel.test.jsx
+frontend/src/pages/Outreach.jsx
+frontend/src/pages/Settings.jsx
 ```
 
 **Modified files:**
 ```
-backend/models.py        (Application model added; OAuthToken + Outreach models added in Phase 3 Task 1)
-backend/main.py          (applications router registered)
-backend/Dockerfile       (Chromium system deps added)
-backend/requirements.txt (fpdf2, pdfminer.six, python-docx, playwright added)
-frontend/src/components/JobCard.jsx  (Apply button wired)
-frontend/src/api/client.js           (4 new exports)
-frontend/src/App.jsx                 (/applications route added)
+backend/models.py        (OAuthToken, Outreach models added)
+backend/main.py          (auth + outreach routers registered)
+backend/requirements.txt (google-auth, google-auth-oauthlib, google-api-python-client, msal)
+frontend/src/api/client.js           (5 new exports)
+frontend/src/components/JobCard.jsx  (Email HR button wired, OutreachPanel inline)
+frontend/src/App.jsx                 (/outreach and /settings routes added)
 ```
+
+**Known technical debt (not blocking):**
+- `datetime.utcnow()` deprecated in Python 3.12+ — affects models.py, email_tools.py, routers — cleanup pass needed
+- `OutreachPanel` fires PATCH on every keystroke (no debounce) — consistent with ReviewPanel pattern, acceptable for now
 
 ---
 
 ## Recommended Next Steps
 
-**Phase 3 — Cold Email Outreach** is next. Plan file: `docs/superpowers/plans/2026-03-22-phase3-cold-email-outreach.md`.
+**Phase 4 — Webhook Integration** is next. Plan file: `docs/superpowers/plans/2026-03-22-phase4-webhook-integration.md`.
 
-Key things to know going into Phase 3 Task 2+:
-- `tailor_resume()` already supports `output_format="pdf"` for email attachments — pass `model=settings.OUTREACH_MODEL` from the Outreach agent
-- `OAuthToken` and `Outreach` models are now in `models.py` — Task 1 complete
-- OAuth tokens are stored in the DB (`oauth_tokens` table), not in `.env`
-- Email provider selected via `EMAIL_PROVIDER` env var (`gmail` or `outlook`)
-- `get_valid_token(provider, db)` is in `email_tools.py` — call this from Outreach agent before sending
-- `send_email(to, subject, body, attachment_path, db)` is the top-level dispatch function (auto-selects Gmail/Outlook via `settings.EMAIL_PROVIDER`)
-- Auth endpoints live at `POST /auth/email/connect` and `GET /auth/email/callback`
-- Phase 3 Task 6 (Frontend) is now complete — all outreach UI is wired end-to-end
-- Next task: Phase 3 Task 7 (if any) or Phase 4 — Webhook Integration
+Key things to know going into Phase 4:
+- Webhook endpoint: `POST /webhook/job-alerts` — receives job alerts from external agents
+- Jobs received via webhook should be de-duplicated by URL
+- `WEBHOOK_SECRET` env var for HMAC signature verification
+- `WEBHOOK_BYPASS_THRESHOLD=true` allows jobs to bypass the `JOB_MATCH_THRESHOLD` score filter
 
-Use `superpowers:subagent-driven-development` to execute Phase 3/4 task by task.
+Use `superpowers:subagent-driven-development` to execute Phase 4 task by task.
