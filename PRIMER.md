@@ -1,6 +1,18 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-23)
+## What Was Done This Session (2026-03-23, Phase 4 Task 1)
+
+Implemented **Phase 4 Task 1 — Orchestrator Scoring Agent** on `main`.
+
+| Task | What was built |
+|---|---|
+| 1 — Orchestrator Scoring Agent | `backend/agents/orchestrator.py` — `score_job()` function using Claude Haiku to score a job 0.0–1.0 against user preferences; `backend/tests/test_orchestrator.py` — 3 TDD tests (happy path, malformed response, clamping) |
+
+**Test results:** 3/3 tests passing. TDD approach followed: tests written and confirmed failing before implementation.
+
+---
+
+## What Was Done Previously (2026-03-23, Phase 3)
 
 Implemented **Phase 3 — Cold Email Outreach** in full across 6 tasks on `main`.
 
@@ -24,7 +36,7 @@ Implemented **Phase 3 — Cold Email Outreach** in full across 6 tasks on `main`
 | 1 — Foundation Dashboard | ✅ Complete |
 | 2 — Application Flow | ✅ Complete |
 | 3 — Cold Email Outreach | ✅ Complete (merged this session) |
-| 4 — Webhook Integration | 🔲 Planned |
+| 4 — Webhook Integration | 🔄 In progress (Task 1 complete) |
 
 **New files added this phase:**
 ```
@@ -71,3 +83,11 @@ Key things to know going into Phase 4:
 - `WEBHOOK_BYPASS_THRESHOLD=true` allows jobs to bypass the `JOB_MATCH_THRESHOLD` score filter
 
 Use `superpowers:subagent-driven-development` to execute Phase 4 task by task.
+
+**Phase 4 Task 1 is done.** Next is Task 2 — Webhook Router:
+- `POST /webhook/job-alerts` endpoint in `backend/routers/webhook.py`
+- HMAC-SHA256 signature verification using `WEBHOOK_SECRET`
+- Deduplication by URL (skip if job URL already in DB)
+- Call `score_job()` from `backend/agents/orchestrator.py` to filter jobs below threshold
+- Honor `WEBHOOK_BYPASS_THRESHOLD` env var to skip scoring filter
+- Store accepted jobs with status `new`
