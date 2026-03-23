@@ -39,3 +39,16 @@ class Job(Base):
     error_reason = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     __table_args__ = (UniqueConstraint("url", name="uq_jobs_url"),)
+
+
+class Application(Base):
+    __tablename__ = "applications"
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, nullable=False)        # FK to jobs.id
+    tailored_resume_path = Column(Text)             # path on disk (text output for forms)
+    form_payload = Column(Text)                     # JSON: {field_name: prefilled_value}
+    tailored_resume_text = Column(Text)             # text content for frontend diff display
+    # 'pending'|'reviewing'|'submitted'|'rejected'|'interviewing'|'offered'|'manual_required'
+    status = Column(String, default="pending")
+    notes = Column(Text)
+    applied_at = Column(DateTime, nullable=True)    # NULL until user confirms submission

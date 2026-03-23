@@ -66,3 +66,23 @@ def test_job_url_unique(db):
     db.add(Job(title="Eng", company="B", url="https://a.com/1", source="serpapi"))
     with pytest.raises(IntegrityError):
         db.commit()
+
+
+def test_create_application(db):
+    from backend.models import Application
+    job = Job(title="Eng", company="A", url="https://a.com/1", source="serpapi")
+    db.add(job)
+    db.commit()
+
+    app = Application(
+        job_id=job.id,
+        tailored_resume_path="uploads/tailored_1.txt",
+        form_payload='{"first_name": "John"}',
+        status="pending",
+    )
+    db.add(app)
+    db.commit()
+    db.refresh(app)
+    assert app.id is not None
+    assert app.status == "pending"
+    assert app.applied_at is None  # NULL until user confirms submission
