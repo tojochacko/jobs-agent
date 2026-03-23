@@ -1,5 +1,16 @@
 # JobApplierAgent — Session Primer
 
+## What Was Done (2026-03-23, Session 3)
+
+- Implemented **Task 2 of Phase 2**: Playwright form scraping and supervised prefill tools (`backend/tools/playwright_tools.py`).
+  - `fetch_application_form(url)`: launches headless Chromium, navigates to the URL, scrapes all `input`/`textarea`/`select` elements, excludes `file`/`hidden`/`submit`/`button` type inputs, returns `{"fields": [...], "title": ..., "url": ...}`. On any exception, returns `{"status": "manual_required", "url": ..., "error": ...}`.
+  - `open_prefilled_form(url, payload)`: opens a non-headless browser, navigates to the URL, fills each field using `[name='...'], [id='...']` locators, then blocks on `input()` so the user can submit manually before the browser closes.
+- Added `playwright>=1.48.0` to `backend/requirements.txt`.
+- Updated `backend/Dockerfile` to install Chromium system packages (`chromium`, `chromium-driver`, `libnss3`, etc.) and set `PLAYWRIGHT_BROWSERS_PATH`/`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` env vars so Playwright uses system Chromium.
+- Added 2 TDD tests in `backend/tests/test_playwright_tools.py` — all passing.
+- Full backend test suite: 34 tests passing (up from 32), no regressions.
+- Committed as `feat: add Playwright form scraping and supervised prefill tools` on branch `feature/phase2-application-flow`.
+
 ## What Was Done (2026-03-23, Session 2)
 
 - Implemented **Task 1 of Phase 2**: the shared resume tailoring tool (`backend/tools/resume_tools.py`).
@@ -25,7 +36,7 @@
 - **Phase 1 (Foundation Dashboard):** Complete — backend API, JobScout Agent, scheduler, job dashboard, preferences, resume upload all implemented.
 - **Phase 2 (Application Flow):** In progress.
   - Task 1 (Resume Tailoring Tool): DONE — `backend/tools/resume_tools.py` committed.
-  - Task 2 (Playwright Tools): Pending.
+  - Task 2 (Playwright Tools): DONE — `backend/tools/playwright_tools.py` committed.
   - Task 3 (Application Model): Pending.
   - Task 4 (Applicator Agent): Pending.
   - Task 5 (Applications Router): Pending.
@@ -33,12 +44,11 @@
   - Task 7 (Applications Pipeline Page): Pending.
 - **Phase 3 (Cold Email Outreach):** Planned.
 - **Phase 4 (Webhook Integration):** Planned.
-- Full backend test suite: 32 tests passing, no regressions.
+- Full backend test suite: 34 tests passing, no regressions.
 - Active worktree: `/Users/tojochacko/code/JobApplierAgent/.worktrees/phase2-application-flow/` on branch `feature/phase2-application-flow`.
 
 ## Next Steps
 
-- Phase 2 Task 2: Implement Playwright tools (`backend/tools/playwright_tools.py`) — form scraping and supervised pre-fill.
 - Phase 2 Task 3: Add Application ORM model to `backend/models.py`.
 - Phase 2 Task 4: Implement Applicator Agent (`backend/agents/applicator.py`).
 - Phase 2 Task 5: Implement Applications Router (`backend/routers/applications.py`).
