@@ -1,5 +1,15 @@
 # JobApplierAgent — Session Primer
 
+## What Was Done (2026-03-23, Session 6)
+
+- Implemented **Task 6 of Phase 2**: ReviewPanel component and Apply flow (frontend).
+  - Added 4 new API exports to `frontend/src/api/client.js`: `triggerApply`, `getApplications`, `updateApplication`, `openInBrowser`.
+  - Created `frontend/src/components/ReviewPanel.jsx`: displays pre-filled form fields table and tailored resume text; "Mark as Submitted" button calls `updateApplication(id, {status:'submitted'})` then invokes `onClose`; shows a yellow "Manual Required" warning when `application.status === 'manual_required'`; "Open in Browser" button calls `openInBrowser`.
+  - Updated `frontend/src/components/JobCard.jsx`: Apply button now calls `triggerApply(job.id)` and renders `ReviewPanel` inline when a response is returned; button is disabled while in-flight and when `job.status` is `applying` or `applied`.
+  - Created `frontend/src/components/ReviewPanel.test.jsx` with 3 TDD tests (renders fields, marks submitted, shows manual required).
+- Full frontend test suite: **14 tests passing** (11 existing + 3 new), no regressions.
+- Committed as `feat: add ReviewPanel component and Apply flow in JobCard` on branch `feature/phase2-application-flow`.
+
 ## What Was Done (2026-03-23, Session 5)
 
 - Implemented **Task 5 of Phase 2**: the Applications Router (`backend/routers/applications.py`).
@@ -63,15 +73,15 @@
   - Task 3 (Application Model): DONE — `Application` ORM model in `backend/models.py` committed.
   - Task 4 (Applicator Agent): DONE — `backend/agents/applicator.py` committed.
   - Task 5 (Applications Router): DONE — `backend/routers/applications.py` committed.
-  - Task 6 (ReviewPanel + Apply Flow): Pending.
+  - Task 6 (ReviewPanel + Apply Flow): DONE — `frontend/src/components/ReviewPanel.jsx` committed.
   - Task 7 (Applications Pipeline Page): Pending.
 - **Phase 3 (Cold Email Outreach):** Planned.
 - **Phase 4 (Webhook Integration):** Planned.
 - Full backend test suite: 44 tests passing, no regressions.
+- Full frontend test suite: 14 tests passing, no regressions.
 - Active worktree: `/Users/tojochacko/code/JobApplierAgent/.worktrees/phase2-application-flow/` on branch `feature/phase2-application-flow`.
 
 ## Next Steps
 
-- Phase 2 Task 6: Implement ReviewPanel component + Apply flow (frontend).
-- Phase 2 Task 7: Applications Pipeline page (frontend).
+- Phase 2 Task 7: Applications Pipeline page (frontend) — list all applications with status badges, notes editing, link back to job.
 - Once Phase 2 is stable, begin Phase 3 (Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation).
