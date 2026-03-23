@@ -86,3 +86,35 @@ def test_create_application(db):
     assert app.id is not None
     assert app.status == "pending"
     assert app.applied_at is None  # NULL until user confirms submission
+
+
+def test_create_oauth_token(db):
+    from backend.models import OAuthToken
+    from datetime import datetime
+    token = OAuthToken(
+        provider="gmail",
+        access_token="access_abc",
+        refresh_token="refresh_xyz",
+        expires_at=datetime(2026, 12, 31),
+    )
+    db.add(token)
+    db.commit()
+    db.refresh(token)
+    assert token.id is not None
+    assert token.provider == "gmail"
+
+
+def test_create_outreach(db):
+    from backend.models import Outreach
+    job = Job(title="Eng", company="A", url="https://a.com/1", source="serpapi")
+    db.add(job)
+    db.commit()
+    outreach = Outreach(
+        job_id=job.id, hr_name="Jane Smith", hr_email="jane@acme.com",
+        hr_confidence="search_result", cover_letter="Dear Jane...", status="draft",
+    )
+    db.add(outreach)
+    db.commit()
+    db.refresh(outreach)
+    assert outreach.id is not None
+    assert outreach.sent_at is None  # NULL until sent

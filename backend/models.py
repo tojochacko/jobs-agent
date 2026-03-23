@@ -52,3 +52,26 @@ class Application(Base):
     status = Column(String, default="pending")
     notes = Column(Text)
     applied_at = Column(DateTime, nullable=True)    # NULL until user confirms submission
+
+
+class OAuthToken(Base):
+    __tablename__ = "oauth_tokens"
+    id = Column(Integer, primary_key=True)
+    provider = Column(String, nullable=False, unique=True)   # 'gmail' | 'outlook'
+    access_token = Column(Text, nullable=False)
+    refresh_token = Column(Text, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Outreach(Base):
+    __tablename__ = "outreach"
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, nullable=False)
+    hr_name = Column(String)
+    hr_email = Column(String)
+    hr_confidence = Column(String)               # 'search_result'|'inferred_pattern'|'unknown'
+    cover_letter = Column(Text)
+    resume_version_path = Column(String)         # path to tailored PDF
+    status = Column(String, default="draft")     # 'draft' | 'sent'
+    sent_at = Column(DateTime, nullable=True)    # NULL until sent
