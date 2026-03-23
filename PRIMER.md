@@ -1,6 +1,23 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-23, Phase 3 Task 1)
+## What Was Done This Session (2026-03-23, Phase 3 Task 2)
+
+Implemented **Phase 3 Task 2 — HR Contact Finder Tool** using TDD on `main`.
+
+| Step | What was done |
+|---|---|
+| Tests written | Created `backend/tests/test_hr_finder.py` with 3 tests covering dict return shape, empty-results fallback, and search exception handling |
+| Red phase | Confirmed `AttributeError` (module not found) for all 3 tests before implementation |
+| Implementation | Created `backend/tools/hr_finder.py` — `find_hr_contact(company, job_title)` searches SerpAPI via `search_people`, feeds snippets to Claude (`OUTREACH_MODEL`) to extract name/email/confidence; falls back to `hr_confidence="unknown"` on any error (search or LLM) |
+| serp.py verified | `search_people(query: str, num_results: int = 5)` — call signature confirmed before use |
+| config.py verified | `settings.OUTREACH_MODEL` already present — no changes needed |
+| Claude error handling | Added try/except around the Anthropic client call so tests without a real API key still pass |
+| Green phase | All 3 new tests pass; all 51 backend tests pass |
+| Committed | `feat: add HR contact finder tool via SerpAPI + Claude extraction` |
+
+---
+
+## Previous Session (2026-03-23, Phase 3 Task 1)
 
 Implemented **Phase 3 Task 1 — OAuthToken and Outreach Models** using TDD on `main`.
 
@@ -38,7 +55,7 @@ Implemented **Phase 2 — Supervised Application Flow** in full across 7 tasks o
 |---|---|
 | 1 — Foundation Dashboard | ✅ Complete |
 | 2 — Application Flow | ✅ Complete (merged this session) |
-| 3 — Cold Email Outreach | 🔄 In progress (Task 1 done) |
+| 3 — Cold Email Outreach | 🔄 In progress (Tasks 1–2 done) |
 | 4 — Webhook Integration | 🔲 Planned |
 
 **New files added this phase:**
@@ -73,6 +90,6 @@ Key things to know going into Phase 3 Task 2+:
 - `OAuthToken` and `Outreach` models are now in `models.py` — Task 1 complete
 - OAuth tokens are stored in the DB (`oauth_tokens` table), not in `.env`
 - Email provider selected via `EMAIL_PROVIDER` env var (`gmail` or `outlook`)
-- Next task: Task 2 — HR Contact Finder Tool (`backend/tools/serp.py` additions for HR lookup)
+- Next task: Task 3 — OAuth Token Management + Auth Router
 
 Use `superpowers:subagent-driven-development` to execute Phase 3 task by task.
