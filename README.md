@@ -16,7 +16,7 @@ An autonomous job search assistant that discovers matching jobs, pre-fills appli
 |---|---|
 | Frontend | React 19 + Vite (JavaScript) |
 | Backend | Python 3.12 + FastAPI |
-| LLM | Claude Haiku (`claude-haiku-4-5`) via Anthropic SDK |
+| LLM | LiteLLM — defaults to `anthropic/claude-haiku-4-5`; swap provider via env var |
 | Job Discovery | SerpAPI (Google Jobs + Google Search) |
 | Browser Automation | Playwright (supervised — never auto-submits) |
 | Email | Gmail or Outlook via OAuth 2.0 |
@@ -28,7 +28,7 @@ An autonomous job search assistant that discovers matching jobs, pre-fills appli
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-- An [Anthropic API key](https://console.anthropic.com/)
+- An [Anthropic API key](https://console.anthropic.com/) (or OpenAI / Gemini if using those providers via LiteLLM)
 - A [SerpAPI key](https://serpapi.com/) (for job discovery)
 - (Optional) Gmail or Outlook OAuth credentials for email outreach
 
@@ -54,11 +54,15 @@ Edit `.env` with your credentials:
 ANTHROPIC_API_KEY=your-anthropic-api-key
 SERP_API_KEY=your-serpapi-key
 
-# Optional — LLM model overrides (defaults shown)
-ORCHESTRATOR_MODEL=claude-haiku-4-5
-SCOUT_MODEL=claude-haiku-4-5
-APPLICATOR_MODEL=claude-haiku-4-5
-OUTREACH_MODEL=claude-haiku-4-5
+# Optional — LLM provider keys (only needed if using non-Anthropic models)
+OPENAI_API_KEY=
+GEMINI_API_KEY=
+
+# Optional — LLM model overrides; prefix determines provider (defaults shown)
+ORCHESTRATOR_MODEL=anthropic/claude-haiku-4-5
+SCOUT_MODEL=anthropic/claude-haiku-4-5
+APPLICATOR_MODEL=anthropic/claude-haiku-4-5
+OUTREACH_MODEL=anthropic/claude-haiku-4-5
 
 # Optional — Job filtering
 JOB_MATCH_THRESHOLD=0.6          # minimum score to store a job (0.0–1.0)
@@ -96,7 +100,7 @@ Navigate to the **Preferences** page and set:
 - Experience level and domain
 - Preferred company sizes
 
-Upload your master resume (PDF or DOCX) — the agent will tailor it per application.
+Upload your master resume (PDF only, max 50 MB) — the agent will tailor it per application.
 
 ## Usage
 
@@ -189,7 +193,7 @@ JobApplierAgent/
 ├── frontend/
 │   └── src/
 │       ├── pages/           # Dashboard, Applications, Outreach, Settings
-│       ├── components/      # JobCard, ReviewPanel, OutreachPanel, StatusBadge
+│       ├── components/      # AppShell, TagInput, JobCard, ReviewPanel, OutreachPanel, StatusBadge
 │       └── api/client.js    # Typed API client
 ├── .devcontainer/           # VS Code Dev Container config
 ├── docker-compose.yml
@@ -200,12 +204,14 @@ JobApplierAgent/
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | — | Anthropic API key |
+| `ANTHROPIC_API_KEY` | Yes* | — | Anthropic API key (*required when using `anthropic/` models) |
+| `OPENAI_API_KEY` | No | — | OpenAI API key (only if using `openai/` models) |
+| `GEMINI_API_KEY` | No | — | Gemini API key (only if using `gemini/` models) |
 | `SERP_API_KEY` | Yes | — | SerpAPI key for job search |
-| `ORCHESTRATOR_MODEL` | No | `claude-haiku-4-5` | Claude model for job scoring |
-| `SCOUT_MODEL` | No | `claude-haiku-4-5` | Claude model for job discovery |
-| `APPLICATOR_MODEL` | No | `claude-haiku-4-5` | Claude model for form filling |
-| `OUTREACH_MODEL` | No | `claude-haiku-4-5` | Claude model for email drafting |
+| `ORCHESTRATOR_MODEL` | No | `anthropic/claude-haiku-4-5` | LiteLLM model string for job scoring |
+| `SCOUT_MODEL` | No | `anthropic/claude-haiku-4-5` | LiteLLM model string for job discovery |
+| `APPLICATOR_MODEL` | No | `anthropic/claude-haiku-4-5` | LiteLLM model string for form filling |
+| `OUTREACH_MODEL` | No | `anthropic/claude-haiku-4-5` | LiteLLM model string for email drafting |
 | `JOB_MATCH_THRESHOLD` | No | `0.6` | Minimum match score to store a job |
 | `WEBHOOK_BYPASS_THRESHOLD` | No | `false` | Store all webhook jobs regardless of score |
 | `WEBHOOK_SECRET` | No | — | Secret for `X-Webhook-Secret` header auth |

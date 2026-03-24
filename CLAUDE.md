@@ -15,7 +15,7 @@ JobApplierAgent is a single-user autonomous job search assistant. It discovers m
 |---|---|
 | Frontend | React 19 + Vite (JavaScript) |
 | Backend | Python 3.12 + FastAPI |
-| LLM | `claude-haiku-4-5` for all agents (upgrade via `ORCHESTRATOR_MODEL` env var to `claude-sonnet-4-6`) |
+| LLM | LiteLLM — defaults to `anthropic/claude-haiku-4-5`; swap provider via model env vars without code changes |
 | Job Discovery | SerpAPI (Google Jobs + Google Search) |
 | Browser Automation | Playwright (supervised mode only — agent never auto-submits) |
 | Email | Gmail / Outlook OAuth |
@@ -63,14 +63,16 @@ JobApplierAgent/
 │       │   ├── Outreach.jsx      # Cold email history
 │       │   └── Settings.jsx      # Webhook URL/secret, email OAuth connect
 │       ├── components/
+│       │   ├── AppShell.jsx      # Left sidebar layout wrapper (nav + outlet)
+│       │   ├── TagInput.jsx      # Controlled tag input (Enter/comma add, × remove)
 │       │   ├── JobCard.jsx
 │       │   ├── StatusBadge.jsx
 │       │   ├── ReviewPanel.jsx   # Resume diff + form preview
 │       │   └── OutreachPanel.jsx # HR contact + cover letter draft editor
 │       ├── api/client.js         # Typed axios wrappers for all endpoints
-│       └── App.jsx               # React Router setup
+│       └── App.jsx               # React Router setup — routes wrapped in AppShell
 │
-├── uploads/                      # Resume file storage (PDF/DOCX)
+├── uploads/                      # Resume file storage (PDF only, max 50 MB)
 ├── docs/superpowers/
 │   ├── specs/                    # Design spec (source of truth)
 │   └── plans/                    # Phase implementation plans
@@ -128,12 +130,14 @@ npm run lint
 ## Environment Variables
 
 ```bash
-# LLM
+# LLM — LiteLLM routes based on model prefix (anthropic/, openai/, gemini/)
 ANTHROPIC_API_KEY=
-ORCHESTRATOR_MODEL=claude-haiku-4-5   # or claude-sonnet-4-6
-SCOUT_MODEL=claude-haiku-4-5
-APPLICATOR_MODEL=claude-haiku-4-5
-OUTREACH_MODEL=claude-haiku-4-5
+OPENAI_API_KEY=                        # optional — only if using openai/ models
+GEMINI_API_KEY=                        # optional — only if using gemini/ models
+ORCHESTRATOR_MODEL=anthropic/claude-haiku-4-5   # or anthropic/claude-sonnet-4-6
+SCOUT_MODEL=anthropic/claude-haiku-4-5
+APPLICATOR_MODEL=anthropic/claude-haiku-4-5
+OUTREACH_MODEL=anthropic/claude-haiku-4-5
 
 # Job Discovery
 SERP_API_KEY=
@@ -166,6 +170,8 @@ DATABASE_URL=sqlite:///./jobapplier.db
 - **Playwright fallback:** If a form can't be parsed, `applications.status = 'manual_required'` and the raw URL is surfaced.
 - **Match threshold:** Jobs scoring below `JOB_MATCH_THRESHOLD` (default 0.6) are not stored. Webhook jobs can bypass this with `WEBHOOK_BYPASS_THRESHOLD=true`.
 - **tailor_resume shared tool:** Used by both Applicator (`output_format="text"` for form fields) and Outreach (`output_format="pdf"` for email attachment) — defined in `tools/resume_tools.py`.
+- **Resume upload constraints:** PDF only; 50 MB max. Validated on both client (`Preferences.jsx`) and server (`routers/resume.py`).
+- **LiteLLM provider routing:** All agents call `litellm.completion()`. The model string prefix determines the provider (`anthropic/`, `openai/`, `gemini/`). Swap provider by changing the model env var — no code changes needed.
 
 ## API Endpoints
 
@@ -196,11 +202,12 @@ DATABASE_URL=sqlite:///./jobapplier.db
 | 2 — Application Flow | Complete | Applicator Agent, Playwright form pre-fill, application tracking pipeline |
 | 3 — Cold Email Outreach | Complete | Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation |
 | 4 — Webhook Integration | Complete | `POST /webhook/job-alerts`, Orchestrator scoring agent, external agent ingestion, deduplication |
+| 5 — LiteLLM + UI Redesign | Complete | LiteLLM migration (all agents), warm-neutral CSS theme, left sidebar AppShell, TagInput component, Preferences page upgrade |
 
 ## Testing Approach
 
 - **Backend:** pytest with in-memory SQLite fixtures (`backend/tests/conftest.py`). Each agent tool is a pure function tested in isolation with mocked API responses. No live API calls in CI.
-- **Frontend:** Vitest + jsdom. Component tests for JobCard, StatusBadge, ReviewPanel, OutreachPanel; page integration tests for Dashboard, Preferences, Applications; API client unit tests.
+- **Frontend:** Vitest + jsdom. Component tests for JobCard, StatusBadge, ReviewPanel, OutreachPanel, TagInput; page integration tests for Dashboard, Preferences, Applications; API client unit tests.
 - Always add tests when implementing new agent tools or API endpoints.
 
 ## Error Handling Conventions
