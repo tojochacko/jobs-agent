@@ -83,20 +83,41 @@ Adding a new provider = one `_<provider>_complete()` function + one `case` line.
 
 ## Section 3: Anthropic Adapter
 
-`_anthropic_complete()` handles three translations:
+`_anthropic_complete()` handles three translations. Exceptions from the Anthropic SDK propagate unchanged so callers' existing `try/except` blocks continue to work.
 
 ### 3a. Messages → Anthropic format
 
 The Anthropic SDK takes `system=` as a separate string parameter. All `role: "system"` entries are extracted and joined; the rest are passed as `messages=`.
 
-Tool result messages (`role: "tool"`) map to Anthropic's format:
+**Tool result messages** (`role: "tool"`) map to Anthropic's format. Consecutive tool result entries must be **merged into a single `user` message** — sending two separate `user` messages will cause an Anthropic API validation error:
+```python
+# OpenAI (internal format) — two separate tool results
+{"role": "tool", "tool_call_id": "tc_1", "name": "search_jobs", "content": "...result 1..."}
+{"role": "tool", "tool_call_id": "tc_2", "name": "search_jobs", "content": "...result 2..."}
+
+# Anthropic SDK — merged into one user message
+{"role": "user", "content": [
+    {"type": "tool_result", "tool_use_id": "tc_1", "content": "...result 1..."},
+    {"type": "tool_result", "tool_use_id": "tc_2", "content": "...result 2..."},
+]}
+```
+
+**Assistant messages containing tool calls** (re-sent in the agentic loop) must be translated from OpenAI format to Anthropic's `tool_use` content block format. A `None` content value must be omitted. The `arguments` field may be a JSON string (if sourced from a raw OpenAI response) — it must be parsed with `json.loads()` before assigning to `input`:
 ```python
 # OpenAI (internal format)
-{"role": "tool", "tool_call_id": "tc_1", "name": "search_jobs", "content": "...result..."}
+{"role": "assistant", "content": None, "tool_calls": [
+    {"id": "tc_1", "type": "function", "function": {"name": "search_jobs", "arguments": "{...}"}}
+]}
 
 # Anthropic SDK
-{"role": "user", "content": [{"type": "tool_result", "tool_use_id": "tc_1", "content": "...result..."}]}
+{"role": "assistant", "content": [
+    {"type": "tool_use", "id": "tc_1", "name": "search_jobs", "input": {...}}  # dict, not string
+]}
 ```
+
+Note: after migration, `job_scout.py` appends `ToolCall.arguments` (already a `dict`) to the message history — so `json.loads()` is only needed in the adapter for any legacy string-format `arguments` values.
+
+Without this translation, the agentic loop in `job_scout.py` will fail on the second Anthropic API call.
 
 ### 3b. Tools → Anthropic format
 
@@ -113,6 +134,7 @@ Tool result messages (`role: "tool"`) map to Anthropic's format:
 Iterate `response.content` blocks:
 - `type: "text"` → `LLMResponse.content`
 - `type: "tool_use"` → `ToolCall(id=block.id, name=block.name, arguments=block.input)`
+- If no `text` block is present (pure tool-call response), `LLMResponse.content` is `None`
 
 ---
 
@@ -138,10 +160,11 @@ text = response.content
 
 ### Tool calling loop (`job_scout.py`)
 
-Three changes:
+Four changes:
 1. `litellm.completion(...)` → `llm.complete(...)`
 2. Check `if response.tool_calls:` instead of `finish_reason == "tool_calls"`
 3. Iterate `response.tool_calls` as `ToolCall` objects — `tc.id`, `tc.name`, `tc.arguments` — instead of parsing JSON from `tc.function.arguments`
+4. Remove `json.loads(tc.function.arguments)` — `ToolCall.arguments` is already a `dict`; wrapping it in `json.loads()` would double-decode
 
 The `TOOLS` list in `job_scout.py` stays in OpenAI format; `llm.py` translates internally.
 
@@ -150,10 +173,10 @@ The `TOOLS` list in `job_scout.py` stays in OpenAI format; `llm.py` translates i
 ## Section 5: Dependencies
 
 ### Remove
-- `litellm==1.82.6` from `backend/pyproject.toml`
+- Run `uv remove litellm` inside the container (never edit `pyproject.toml` directly)
 
 ### Add
-- `anthropic` (latest clean release) via `uv add anthropic`
+- Run `uv add anthropic` inside the container to add the latest clean release
 
 ### Future
 - `openai` added via `uv add openai` when OpenAI provider support is needed
@@ -178,7 +201,7 @@ with patch("backend.agents.job_scout.llm.complete") as mock:
     )
 ```
 
-All existing tests are updated to use the new mock shape. No new tests needed — coverage is unchanged.
+All existing tests are updated to use the new mock shape. A new `backend/tests/test_llm.py` is added to test the adapter translation logic in isolation — specifically: tool_use message translation, consecutive tool result merging, and `None` content handling. These paths are the highest-risk new code and are not exercised by the call-site tests.
 
 ---
 
@@ -201,6 +224,7 @@ All existing tests are updated to use the new mock shape. No new tests needed �
 | `backend/tests/test_outreach_agent.py` | Update mock shape + patch target |
 | `backend/tests/test_resume_tools.py` | Update mock shape + patch target |
 | `backend/tests/test_hr_finder.py` | Update mock shape + patch target |
+| `backend/tests/test_llm.py` | **New** — adapter translation unit tests |
 
 ---
 
