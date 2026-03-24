@@ -15,6 +15,7 @@ class PreferenceRequest(BaseModel):
     experience_level: str = ""
     domain: str = ""
     company_size: list[str] = []
+    industry: list[str] = []
 
 
 class PreferenceResponse(BaseModel):
@@ -27,11 +28,13 @@ class PreferenceResponse(BaseModel):
     experience_level: str
     domain: str
     company_size: list[str]
+    industry: list[str]
 
 
 def _deserialize(pref: Preference) -> Preference:
     pref.job_titles = json.loads(pref.job_titles)
     pref.company_size = json.loads(pref.company_size or "[]")
+    pref.industry = json.loads(pref.industry or "[]")
     return pref
 
 
@@ -54,6 +57,7 @@ def save_preferences(payload: PreferenceRequest, db: Session = Depends(get_db)):
         experience_level=payload.experience_level,
         domain=payload.domain,
         company_size=json.dumps(payload.company_size),
+        industry=json.dumps(payload.industry),
     )
     db.add(pref)
     db.commit()

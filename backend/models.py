@@ -12,6 +12,7 @@ class Preference(Base):
     experience_level = Column(String)
     domain = Column(String)
     company_size = Column(Text)                      # JSON string
+    industry = Column(Text)                          # JSON string
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

@@ -26,7 +26,33 @@ const DOMAIN_OPTIONS = [
   { value: 'qa-testing',        label: 'QA / Testing'           },
   { value: 'game-development',  label: 'Game Development'       },
   { value: 'blockchain-web3',   label: 'Blockchain / Web3'      },
-  { value: 'embedded-systems',  label: 'Embedded Systems'       },
+  { value: 'embedded-systems',      label: 'Embedded Systems'         },
+  { value: 'professional-services', label: 'Professional Services'    },
+]
+
+const INDUSTRY_OPTIONS = [
+  { value: 'technology',           label: 'Technology'                   },
+  { value: 'finance-banking',      label: 'Finance & Banking'            },
+  { value: 'healthcare',           label: 'Healthcare & Life Sciences'   },
+  { value: 'education',            label: 'Education'                    },
+  { value: 'retail-ecommerce',     label: 'Retail & E-commerce'          },
+  { value: 'manufacturing',        label: 'Manufacturing'                },
+  { value: 'media-entertainment',  label: 'Media & Entertainment'        },
+  { value: 'government',           label: 'Government & Public Sector'   },
+  { value: 'consulting',           label: 'Consulting'                   },
+  { value: 'real-estate',          label: 'Real Estate'                  },
+  { value: 'energy-utilities',     label: 'Energy & Utilities'           },
+  { value: 'logistics',            label: 'Transportation & Logistics'   },
+  { value: 'telecom',              label: 'Telecommunications'           },
+  { value: 'legal',                label: 'Legal Services'               },
+  { value: 'nonprofit',            label: 'Non-Profit'                   },
+  { value: 'automotive',           label: 'Automotive'                   },
+  { value: 'aerospace-defense',    label: 'Aerospace & Defense'          },
+  { value: 'food-beverage',        label: 'Food & Beverage'              },
+  { value: 'hospitality-travel',   label: 'Hospitality & Travel'         },
+  { value: 'insurance',            label: 'Insurance'                    },
+  { value: 'agriculture',          label: 'Agriculture'                  },
+  { value: 'construction',         label: 'Construction & Engineering'   },
 ]
 
 const COMPANY_SIZE_OPTIONS = [
@@ -45,6 +71,7 @@ export function Preferences() {
     experience_level: '',
     domain: '',
     company_size: [],
+    industry: [],
   })
   const [resume, setResume] = useState(null)
   const [saved, setSaved] = useState(false)
@@ -58,6 +85,7 @@ export function Preferences() {
         experience_level: pref.experience_level || '',
         domain: pref.domain || '',
         company_size: pref.company_size || [],
+        industry: pref.industry || [],
       })
     })
     getResume().then(setResume)
@@ -71,6 +99,15 @@ export function Preferences() {
       company_size: f.company_size.includes(value)
         ? f.company_size.filter(v => v !== value)
         : [...f.company_size, value],
+    }))
+  }
+
+  const toggleIndustry = (value) => {
+    setForm(f => ({
+      ...f,
+      industry: f.industry.includes(value)
+        ? f.industry.filter(v => v !== value)
+        : [...f.industry, value],
     }))
   }
 
@@ -179,6 +216,22 @@ export function Preferences() {
                     type="checkbox"
                     checked={form.company_size.includes(o.value)}
                     onChange={() => toggleSize(o.value)}
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="field" style={{ marginBottom: 16 }}>
+            <label>Industry Domain</label>
+            <div className="checkbox-group" style={{ maxHeight: 160, overflowY: 'auto' }}>
+              {INDUSTRY_OPTIONS.map(o => (
+                <label key={o.value} className="checkbox-pill">
+                  <input
+                    type="checkbox"
+                    checked={form.industry.includes(o.value)}
+                    onChange={() => toggleIndustry(o.value)}
                   />
                   {o.label}
                 </label>
