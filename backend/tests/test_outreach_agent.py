@@ -34,3 +34,24 @@ def test_run_outreach_proceeds_with_unknown_contact():
         result = run_outreach(1, "Acme", "JD", "uploads/master.pdf", "uploads")
     assert result["hr_confidence"] == "unknown"
     assert result["cover_letter"] == "Cover letter"
+
+
+def test_generate_cover_letter_returns_string():
+    msg = MagicMock()
+    msg.content = "Dear Jane,\n\nI am excited to apply for the Python Engineer role at Acme."
+    choice = MagicMock()
+    choice.message = msg
+    resp = MagicMock()
+    resp.choices = [choice]
+    with patch("backend.agents.outreach.litellm.completion") as mock_completion, \
+         patch("backend.tools.resume_tools._read_resume", return_value="Resume content"):
+        mock_completion.return_value = resp
+        from backend.agents.outreach import generate_cover_letter
+        result = generate_cover_letter(
+            job_description="Python Engineer at Acme",
+            resume_path="uploads/resume.txt",
+            company="Acme",
+            hr_name="Jane Smith",
+        )
+    assert isinstance(result, str)
+    assert "Jane" in result

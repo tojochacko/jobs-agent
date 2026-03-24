@@ -1,5 +1,5 @@
 import os
-import anthropic
+import litellm
 from backend.config import settings
 from backend.tools.hr_finder import find_hr_contact
 from backend.tools.resume_tools import tailor_resume
@@ -19,12 +19,11 @@ def generate_cover_letter(
 
     resume_content = _read_resume(resume_path)
     greeting = f"Dear {hr_name}," if hr_name else "Dear Hiring Manager,"
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    response = client.messages.create(
+    response = litellm.completion(
         model=settings.OUTREACH_MODEL,
         max_tokens=1024,
-        system=COVER_LETTER_SYSTEM,
         messages=[
+            {"role": "system", "content": COVER_LETTER_SYSTEM},
             {
                 "role": "user",
                 "content": (
@@ -34,13 +33,10 @@ def generate_cover_letter(
                     f"Salutation: {greeting}\n\n"
                     "Write the cover letter."
                 ),
-            }
+            },
         ],
     )
-    for block in response.content:
-        if getattr(block, "type", None) == "text":
-            return block.text
-    return ""
+    return response.choices[0].message.content or ""
 
 
 def run_outreach(
