@@ -23,13 +23,12 @@ def test_create_preference(db):
         experience_level="senior",
         domain="backend",
         company_size='["startup"]',
-        poll_interval_hrs=6,
     )
     db.add(pref)
     db.commit()
     db.refresh(pref)
     assert pref.id is not None
-    assert pref.poll_interval_hrs == 6
+    assert not hasattr(pref, "poll_interval_hrs")
 
 
 def test_create_resume(db):

@@ -1,6 +1,5 @@
 import json
 import logging
-from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.exc import IntegrityError
 from backend.database import SessionLocal
 from backend.models import Preference, Job
@@ -28,7 +27,7 @@ def get_preferences_dict() -> dict | None:
 
 
 def run_poll():
-    """One job discovery poll. Called on startup and by scheduler."""
+    """One job discovery poll. Called on startup and via POST /jobs/refresh."""
     preferences = get_preferences_dict()
     if not preferences:
         logger.info("No preferences configured — skipping job poll")
@@ -64,12 +63,3 @@ def run_poll():
         logger.info(f"Poll complete: {inserted} new jobs")
     finally:
         db.close()
-
-
-def start_scheduler(poll_interval_hrs: int = 6):
-    """Start background scheduler and run an immediate poll on startup."""
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(run_poll, "interval", hours=poll_interval_hrs)
-    scheduler.start()
-    run_poll()  # immediate poll on startup — no waiting for first interval
-    return scheduler

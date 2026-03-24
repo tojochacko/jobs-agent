@@ -12,7 +12,6 @@ class Preference(Base):
     experience_level = Column(String)
     domain = Column(String)
     company_size = Column(Text)                      # JSON string
-    poll_interval_hrs = Column(Integer, default=6)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

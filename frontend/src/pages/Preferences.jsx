@@ -45,7 +45,6 @@ export function Preferences() {
     experience_level: '',
     domain: '',
     company_size: [],
-    poll_interval_hrs: 6,
   })
   const [resume, setResume] = useState(null)
   const [saved, setSaved] = useState(false)
@@ -59,7 +58,6 @@ export function Preferences() {
         experience_level: pref.experience_level || '',
         domain: pref.domain || '',
         company_size: pref.company_size || [],
-        poll_interval_hrs: pref.poll_interval_hrs || 6,
       })
     })
     getResume().then(setResume)
@@ -78,10 +76,7 @@ export function Preferences() {
 
   const handleSave = (e) => {
     e.preventDefault()
-    savePreferences({
-      ...form,
-      poll_interval_hrs: Number(form.poll_interval_hrs),
-    }).then(() => setSaved(true))
+    savePreferences(form).then(() => setSaved(true))
   }
 
   const handleResumeUpload = (e) => {
@@ -191,18 +186,6 @@ export function Preferences() {
             </div>
           </div>
 
-          <div className="field">
-            <label htmlFor="poll_interval_hrs">Poll Interval (hours)</label>
-            <input
-              id="poll_interval_hrs"
-              type="number"
-              min="1"
-              className="input"
-              style={{ width: 72 }}
-              value={form.poll_interval_hrs}
-              onChange={set('poll_interval_hrs')}
-            />
-          </div>
         </div>
 
         <button type="submit" className="btn-primary">Save Preferences</button>

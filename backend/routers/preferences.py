@@ -15,12 +15,11 @@ class PreferenceRequest(BaseModel):
     experience_level: str = ""
     domain: str = ""
     company_size: list[str] = []
-    poll_interval_hrs: int = 6
 
 
 class PreferenceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     job_titles: list[str]
     location: str
@@ -28,7 +27,6 @@ class PreferenceResponse(BaseModel):
     experience_level: str
     domain: str
     company_size: list[str]
-    poll_interval_hrs: int
 
 
 def _deserialize(pref: Preference) -> Preference:
@@ -56,7 +54,6 @@ def save_preferences(payload: PreferenceRequest, db: Session = Depends(get_db)):
         experience_level=payload.experience_level,
         domain=payload.domain,
         company_size=json.dumps(payload.company_size),
-        poll_interval_hrs=payload.poll_interval_hrs,
     )
     db.add(pref)
     db.commit()

@@ -12,13 +12,12 @@ def test_post_preferences(client):
         "experience_level": "senior",
         "domain": "backend",
         "company_size": ["startup"],
-        "poll_interval_hrs": 4,
     }
     response = client.post("/preferences", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert data["location"] == "Remote"
-    assert data["poll_interval_hrs"] == 4
+    assert "poll_interval_hrs" not in data
     assert data["job_titles"] == ["Python Engineer", "Backend Engineer"]
 
 

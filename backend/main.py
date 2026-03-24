@@ -4,20 +4,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import engine, Base
 from backend.routers import preferences, resume, jobs, applications, auth, outreach, webhook
-from backend.scheduler import start_scheduler
+from backend.scheduler import run_poll
 
 logging.basicConfig(level=logging.INFO)
-_scheduler = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    global _scheduler
-    _scheduler = start_scheduler(poll_interval_hrs=6)
+    run_poll()
     yield
-    if _scheduler and _scheduler.running:
-        _scheduler.shutdown()
 
 
 app = FastAPI(title="JobApplierAgent", lifespan=lifespan)
