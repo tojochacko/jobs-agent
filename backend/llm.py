@@ -26,6 +26,8 @@ def complete(
     tools: list[dict] | None = None,
 ) -> LLMResponse:
     """Route an LLM call to the correct provider based on the 'provider/model' prefix."""
+    if "/" not in model:
+        raise ValueError(f"Model must be 'provider/model', got: {model!r}")
     provider, model_name = model.split("/", 1)
     match provider:
         case "anthropic":

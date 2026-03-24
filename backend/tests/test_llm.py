@@ -34,6 +34,11 @@ def test_complete_unknown_provider_raises():
         complete("badprovider/some-model", [{"role": "user", "content": "hi"}])
 
 
+def test_complete_missing_slash_raises():
+    with pytest.raises(ValueError, match="provider/model"):
+        complete("claude-haiku-4-5", [{"role": "user", "content": "hi"}])
+
+
 def test_complete_anthropic_simple_text():
     with patch("backend.llm.anthropic.Anthropic") as MockClient:
         MockClient.return_value.messages.create.return_value = _anthropic_text_resp("Hello!")
