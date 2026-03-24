@@ -1,6 +1,6 @@
 import json
 import logging
-import anthropic
+import litellm
 from backend.config import settings
 from backend.tools.playwright_tools import fetch_application_form
 from backend.tools.resume_tools import tailor_resume
@@ -37,13 +37,12 @@ def run_applicator(job_id: int, job_url: str, job_description: str, resume_path:
         return {"status": "manual_required", "url": job_url}
 
     # Step 3: Use LLM to map resume data to form fields
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     try:
-        response = client.messages.create(
+        response = litellm.completion(
             model=settings.APPLICATOR_MODEL,
             max_tokens=1024,
-            system=SYSTEM_PROMPT,
             messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
                     "content": (
@@ -51,7 +50,7 @@ def run_applicator(job_id: int, job_url: str, job_description: str, resume_path:
                         f"Tailored Resume:\n{tailored}\n\n"
                         "Return a JSON object mapping each field name to its value."
                     ),
-                }
+                },
             ],
         )
     except Exception as e:
@@ -59,14 +58,11 @@ def run_applicator(job_id: int, job_url: str, job_description: str, resume_path:
         return {"status": "manual_required", "url": job_url}
 
     payload = {}
-    for block in response.content:
-        if getattr(block, "type", None) == "text":
-            try:
-                payload = json.loads(block.text)
-            except json.JSONDecodeError:
-                logger.warning(f"LLM returned non-JSON payload for job {job_id}: {block.text[:100]}")
-                payload = {}
-            break
+    try:
+        payload = json.loads(response.choices[0].message.content)
+    except (json.JSONDecodeError, TypeError):
+        logger.warning(f"LLM returned non-JSON payload for job {job_id}: {response.choices[0].message.content[:100]}")
+        payload = {}
 
     return {
         "status": "ready",
