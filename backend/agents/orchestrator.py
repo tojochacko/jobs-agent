@@ -1,6 +1,6 @@
 import json
 import logging
-import anthropic
+import litellm
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,6 @@ def score_job(job_data: dict, preferences: dict) -> float:
     Score a single job against user preferences.
     Returns a float 0.0–1.0. Returns 0.0 on any error.
     """
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     prompt = (
         f"User Preferences:\n{json.dumps(preferences, indent=2)}\n\n"
         f"Job Posting:\nTitle: {job_data.get('title', '')}\n"
@@ -32,18 +31,17 @@ def score_job(job_data: dict, preferences: dict) -> float:
         f"Score this job (0.0–1.0):"
     )
     try:
-        response = client.messages.create(
+        response = litellm.completion(
             model=settings.ORCHESTRATOR_MODEL,
             max_tokens=16,
-            system=SCORE_SYSTEM,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": SCORE_SYSTEM},
+                {"role": "user", "content": prompt},
+            ],
         )
-        for block in response.content:
-            if getattr(block, "type", None) == "text":
-                raw = block.text.strip()
-                score = float(raw)
-                return max(0.0, min(1.0, score))  # clamp to [0, 1]
+        raw = response.choices[0].message.content.strip()
+        score = float(raw)
+        return max(0.0, min(1.0, score))
     except Exception as e:
         logger.warning("score_job failed: %s", e)
-        pass
     return 0.0
