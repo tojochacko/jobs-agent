@@ -1,6 +1,6 @@
 import json
 import logging
-import litellm
+from backend import llm
 from backend.config import settings
 from backend.tools.playwright_tools import fetch_application_form
 from backend.tools.resume_tools import tailor_resume
@@ -38,7 +38,7 @@ def run_applicator(job_id: int, job_url: str, job_description: str, resume_path:
 
     # Step 3: Use LLM to map resume data to form fields
     try:
-        response = litellm.completion(
+        response = llm.complete(
             model=settings.APPLICATOR_MODEL,
             max_tokens=1024,
             messages=[
@@ -59,9 +59,9 @@ def run_applicator(job_id: int, job_url: str, job_description: str, resume_path:
 
     payload = {}
     try:
-        payload = json.loads(response.choices[0].message.content)
+        payload = json.loads(response.content)
     except (json.JSONDecodeError, TypeError):
-        logger.warning(f"LLM returned non-JSON payload for job {job_id}: {response.choices[0].message.content[:100]}")
+        logger.warning(f"LLM returned non-JSON payload for job {job_id}: {response.content[:100] if response.content else 'None'}")
         payload = {}
 
     return {

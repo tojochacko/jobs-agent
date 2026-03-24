@@ -1,7 +1,7 @@
-import litellm
 from pathlib import Path
 from typing import Literal
 from fpdf import FPDF
+from backend import llm
 from backend.config import settings
 
 
@@ -57,7 +57,7 @@ def tailor_resume(
            Defaults to settings.APPLICATOR_MODEL if not provided.
     """
     resume_content = _read_resume(master_resume_path)
-    response = litellm.completion(
+    response = llm.complete(
         model=model or settings.APPLICATOR_MODEL,
         max_tokens=2048,
         messages=[
@@ -68,7 +68,7 @@ def tailor_resume(
             },
         ],
     )
-    tailored_text = response.choices[0].message.content
+    tailored_text = response.content
 
     if not tailored_text:
         raise RuntimeError("LLM returned no text content for resume tailoring")
