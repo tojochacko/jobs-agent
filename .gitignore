@@ -11,4 +11,5 @@ dist/
 .venv/
 .superpowers/
 .playwright-mcp/
+.serena/
 *.png
