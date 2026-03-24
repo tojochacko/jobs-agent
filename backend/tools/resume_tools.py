@@ -1,4 +1,4 @@
-import anthropic
+import litellm
 from pathlib import Path
 from typing import Literal
 from fpdf import FPDF
@@ -57,23 +57,18 @@ def tailor_resume(
            Defaults to settings.APPLICATOR_MODEL if not provided.
     """
     resume_content = _read_resume(master_resume_path)
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    response = client.messages.create(
+    response = litellm.completion(
         model=model or settings.APPLICATOR_MODEL,
         max_tokens=2048,
-        system=TAILOR_SYSTEM,
         messages=[
+            {"role": "system", "content": TAILOR_SYSTEM},
             {
                 "role": "user",
                 "content": f"Job Description:\n{job_description}\n\nMaster Resume:\n{resume_content}\n\nTailor the resume for this role.",
-            }
+            },
         ],
     )
-    tailored_text = ""
-    for block in response.content:
-        if getattr(block, "type", None) == "text":
-            tailored_text = block.text
-            break
+    tailored_text = response.choices[0].message.content
 
     if not tailored_text:
         raise RuntimeError("LLM returned no text content for resume tailoring")

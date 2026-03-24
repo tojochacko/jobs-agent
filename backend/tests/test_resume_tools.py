@@ -12,13 +12,19 @@ def sample_resume(tmp_path):
     return str(f)
 
 
+def _mock_llm_response(text: str):
+    msg = MagicMock()
+    msg.content = text
+    choice = MagicMock()
+    choice.message = msg
+    resp = MagicMock()
+    resp.choices = [choice]
+    return resp
+
+
 def test_tailor_resume_text_returns_string(sample_resume):
-    mock_response = MagicMock()
-    mock_response.content = [MagicMock(type="text", text="Tailored resume text for Python role")]
-    with patch("backend.tools.resume_tools.anthropic.Anthropic") as MockClient:
-        client = MagicMock()
-        MockClient.return_value = client
-        client.messages.create.return_value = mock_response
+    with patch("backend.tools.resume_tools.litellm.completion") as mock_completion:
+        mock_completion.return_value = _mock_llm_response("Tailored resume text for Python role")
         from backend.tools.resume_tools import tailor_resume
         result = tailor_resume(
             job_description="Senior Python Engineer at Acme",
@@ -31,14 +37,10 @@ def test_tailor_resume_text_returns_string(sample_resume):
 
 
 def test_tailor_resume_pdf_writes_file(sample_resume, tmp_path):
-    mock_response = MagicMock()
-    mock_response.content = [MagicMock(type="text", text="Tailored resume content")]
     output_path = str(tmp_path / "tailored.pdf")
-    with patch("backend.tools.resume_tools.anthropic.Anthropic") as MockClient, \
+    with patch("backend.tools.resume_tools.litellm.completion") as mock_completion, \
          patch("backend.tools.resume_tools._write_pdf") as mock_pdf:
-        client = MagicMock()
-        MockClient.return_value = client
-        client.messages.create.return_value = mock_response
+        mock_completion.return_value = _mock_llm_response("Tailored resume content")
         from backend.tools.resume_tools import tailor_resume
         result = tailor_resume(
             job_description="Senior Python Engineer at Acme",
@@ -51,12 +53,8 @@ def test_tailor_resume_pdf_writes_file(sample_resume, tmp_path):
 
 
 def test_tailor_resume_reads_resume_content(sample_resume):
-    mock_response = MagicMock()
-    mock_response.content = [MagicMock(type="text", text="output")]
-    with patch("backend.tools.resume_tools.anthropic.Anthropic") as MockClient:
-        client = MagicMock()
-        MockClient.return_value = client
-        client.messages.create.return_value = mock_response
+    with patch("backend.tools.resume_tools.litellm.completion") as mock_completion:
+        mock_completion.return_value = _mock_llm_response("output")
         from backend.tools.resume_tools import tailor_resume, _read_resume
         content = _read_resume(sample_resume)
         assert "Senior Python Engineer" in content
