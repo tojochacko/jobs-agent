@@ -1,5 +1,5 @@
 import json
-import litellm
+from backend import llm
 from backend.config import settings
 from backend.tools.serp import search_jobs
 
@@ -65,41 +65,38 @@ def run_job_scout(preferences: dict) -> list[dict]:
     ]
 
     while True:
-        response = litellm.completion(
+        response = llm.complete(
             model=settings.SCOUT_MODEL,
             max_tokens=4096,
             tools=TOOLS,
             messages=messages,
         )
 
-        choice = response.choices[0]
-
-        if choice.finish_reason == "tool_calls":
-            msg = choice.message
+        if response.tool_calls:
             messages.append({
                 "role": "assistant",
-                "content": msg.content,
+                "content": response.content,
                 "tool_calls": [
                     {
                         "id": tc.id,
                         "type": "function",
-                        "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+                        "function": {"name": tc.name, "arguments": tc.arguments},
                     }
-                    for tc in (msg.tool_calls or [])
+                    for tc in response.tool_calls
                 ],
             })
-            for tc in (msg.tool_calls or []):
-                result = _execute_tool(tc.function.name, json.loads(tc.function.arguments))
+            for tc in response.tool_calls:
+                result = _execute_tool(tc.name, tc.arguments)
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tc.id,
-                    "name": tc.function.name,
+                    "name": tc.name,
                     "content": result,
                 })
             continue
 
         # end_turn / stop — parse final JSON output
-        content = choice.message.content
+        content = response.content
         if content:
             try:
                 jobs = json.loads(content)
