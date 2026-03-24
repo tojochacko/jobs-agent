@@ -41,7 +41,6 @@ const COMPANY_SIZE_OPTIONS = [
 export function Preferences() {
   const [form, setForm] = useState({
     job_titles: [],
-    location: '',
     remote_hybrid: 'any',
     experience_level: '',
     domain: '',
@@ -50,12 +49,12 @@ export function Preferences() {
   })
   const [resume, setResume] = useState(null)
   const [saved, setSaved] = useState(false)
+  const [resumeError, setResumeError] = useState('')
 
   useEffect(() => {
     getPreferences().then(pref => {
       if (pref) setForm({
         job_titles: pref.job_titles || [],
-        location: pref.location || '',
         remote_hybrid: pref.remote_hybrid || 'any',
         experience_level: pref.experience_level || '',
         domain: pref.domain || '',
@@ -87,7 +86,17 @@ export function Preferences() {
 
   const handleResumeUpload = (e) => {
     const file = e.target.files[0]
-    if (file) uploadResume(file).then(setResume)
+    if (!file) return
+    if (file.type !== 'application/pdf') {
+      setResumeError('Only PDF files are accepted.')
+      return
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setResumeError('File exceeds the 50 MB size limit.')
+      return
+    }
+    setResumeError('')
+    uploadResume(file).then(setResume)
   }
 
   return (
@@ -115,12 +124,9 @@ export function Preferences() {
           <div className="form-row">
             <div className="field">
               <label htmlFor="location">Location</label>
-              <input
-                id="location"
-                className="input"
-                value={form.location}
-                onChange={set('location')}
-              />
+              <div id="location" className="input" style={{ color: 'var(--text-muted)', userSelect: 'none' }}>
+                Only Indian Metro cities
+              </div>
             </div>
             <div className="field">
               <label htmlFor="remote_hybrid">Arrangement</label>
@@ -223,6 +229,9 @@ export function Preferences() {
             </span>
           </label>
         </div>
+        {resumeError && (
+          <div style={{ color: '#dc2626', fontSize: 12, marginTop: 6 }}>{resumeError}</div>
+        )}
       </div>
     </div>
   )

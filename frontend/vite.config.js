@@ -8,6 +8,9 @@ export default defineConfig({
       '^/(preferences|resume|jobs|applications|outreach|auth|webhook|health)': {
         target: process.env.BACKEND_URL || 'http://localhost:8000',
         changeOrigin: true,
+        bypass: (req) => {
+          if (req.headers.accept?.includes('text/html')) return '/index.html'
+        },
       },
     },
   },
