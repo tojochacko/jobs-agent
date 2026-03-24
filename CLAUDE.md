@@ -36,18 +36,21 @@ JobApplierAgent/
 │   ├── agents/
 │   │   ├── job_scout.py          # JobScout Agent (SerpAPI + scoring)
 │   │   ├── applicator.py         # Applicator Agent (Playwright form pre-fill)
-│   │   ├── orchestrator.py       # Orchestrator Agent (delegates to sub-agents)
+│   │   ├── orchestrator.py       # Orchestrator scoring agent (scores webhook jobs against preferences)
 │   │   └── outreach.py           # Outreach Agent (HR contact + email)
 │   ├── routers/
 │   │   ├── preferences.py        # GET/POST /preferences
 │   │   ├── jobs.py               # GET/DELETE /jobs, POST /jobs/refresh
 │   │   ├── resume.py             # POST/GET /resume
 │   │   ├── applications.py       # POST/GET/PATCH /applications
-│   │   └── outreach.py           # POST/GET/PATCH /outreach, POST /outreach/{id}/send
+│   │   ├── outreach.py           # POST/GET/PATCH /outreach, POST /outreach/{id}/send
+│   │   ├── auth.py               # POST /auth/email/connect, GET /auth/email/callback
+│   │   └── webhook.py            # POST /webhook/job-alerts
 │   ├── tools/
 │   │   ├── serp.py               # SerpAPI wrapper (jobs + Google Search)
 │   │   ├── playwright_tools.py   # Form scraping + supervised pre-fill
-│   │   ├── email_tools.py        # Gmail/Outlook OAuth send
+│   │   ├── email_tools.py        # Gmail/Outlook OAuth send + token management
+│   │   ├── hr_finder.py          # HR contact lookup via SerpAPI + Claude extraction
 │   │   └── resume_tools.py       # tailor_resume (shared: text for forms, pdf for email)
 │   └── tests/                    # pytest tests (in-memory SQLite)
 │
@@ -62,7 +65,8 @@ JobApplierAgent/
 │       ├── components/
 │       │   ├── JobCard.jsx
 │       │   ├── StatusBadge.jsx
-│       │   └── ReviewPanel.jsx   # Resume diff + form preview / email draft
+│       │   ├── ReviewPanel.jsx   # Resume diff + form preview
+│       │   └── OutreachPanel.jsx # HR contact + cover letter draft editor
 │       ├── api/client.js         # Typed axios wrappers for all endpoints
 │       └── App.jsx               # React Router setup
 │
@@ -79,10 +83,10 @@ JobApplierAgent/
 React Frontend (Vite @ :5173)
   └─ Proxied via Vite dev server → FastAPI Backend (:8000)
         ├─ REST API Routers
-        ├─ Orchestrator Agent
-        │     ├─ JobScout Agent  (SerpAPI → Claude scoring)
-        │     ├─ Applicator Agent (Playwright → form pre-fill)
-        │     └─ Outreach Agent  (SerpAPI HR lookup → email draft)
+        │     ├─ JobScout Agent      (SerpAPI → Claude scoring)
+        │     ├─ Applicator Agent    (Playwright → form pre-fill)
+        │     ├─ Outreach Agent      (SerpAPI HR lookup → cover letter → email)
+        │     └─ Orchestrator Agent  (scores webhook jobs against preferences)
         ├─ APScheduler (configurable interval, default 6h)
         └─ SQLite DB
 ```
@@ -189,14 +193,14 @@ DATABASE_URL=sqlite:///./jobapplier.db
 | Phase | Status | Scope |
 |---|---|---|
 | 1 — Foundation Dashboard | Complete | Backend API, JobScout Agent, scheduler, job dashboard, preferences, resume upload |
-| 2 — Application Flow | In progress | Applicator Agent, Playwright form pre-fill, application tracking pipeline |
-| 3 — Cold Email Outreach | Planned | Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation |
-| 4 — Webhook Integration | Planned | `POST /webhook/job-alerts`, external agent ingestion, deduplication |
+| 2 — Application Flow | Complete | Applicator Agent, Playwright form pre-fill, application tracking pipeline |
+| 3 — Cold Email Outreach | Complete | Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation |
+| 4 — Webhook Integration | Complete | `POST /webhook/job-alerts`, Orchestrator scoring agent, external agent ingestion, deduplication |
 
 ## Testing Approach
 
 - **Backend:** pytest with in-memory SQLite fixtures (`backend/tests/conftest.py`). Each agent tool is a pure function tested in isolation with mocked API responses. No live API calls in CI.
-- **Frontend:** Vitest + jsdom. Component tests for JobCard, StatusBadge, ReviewPanel; page integration tests for Dashboard and Preferences; API client unit tests.
+- **Frontend:** Vitest + jsdom. Component tests for JobCard, StatusBadge, ReviewPanel, OutreachPanel; page integration tests for Dashboard, Preferences, Applications; API client unit tests.
 - Always add tests when implementing new agent tools or API endpoints.
 
 ## Error Handling Conventions
