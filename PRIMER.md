@@ -1,98 +1,56 @@
 # JobApplierAgent — Session Primer
 
-## What Was Done This Session (2026-03-24)
+## What Was Done This Session (2026-03-25)
 
-### Security fixes + uv migration
+### LLM Gateway Replacement (litellm → in-house `backend/llm.py`)
 
-**1. litellm supply chain attack (CVE)**
+Replaced `litellm==1.82.6` with an in-house LLM gateway module. This was the planned follow-up to the prior session's supply chain attack mitigation (pinning litellm to 1.82.6). The new gateway eliminates the dependency entirely.
 
-Versions 1.82.7 and 1.82.8 of litellm contained a malicious `.pth` file (`litellm_init.pth`) that auto-executes a credential-stealing script on every Python interpreter start, exfiltrating env vars, SSH keys, and cloud credentials to `https://models.litellm.cloud/`.
+**New file: `backend/llm.py`**
+- `complete(model, messages, max_tokens, tools) -> LLMResponse` — single entry point for all LLM calls
+- `LLMResponse(content, tool_calls)` and `ToolCall(id, name, arguments)` dataclasses
+- Dispatches on `provider/model` prefix; raises `ValueError` for unknown providers or missing `/`
+- Anthropic adapter: extracts system messages, merges consecutive tool results, translates OpenAI-format `tool_calls` to Anthropic `tool_use` blocks
+- `backend/tests/test_llm.py` — 8 unit tests covering all translation paths
 
-- Confirmed container was NOT compromised (had 1.82.6, no `.pth` files found)
-- Pinned `litellm<=1.82.6` in `requirements.txt` (then migrated to `==1.82.6` in `pyproject.toml`)
-- Changed Docker port bindings from `0.0.0.0` to `127.0.0.1` (`:8000` and `:5173` — LAN exposure removed)
-- Commits: `55dcd5d`, `32799e4`
+**Migrated callers (6 files):**
+- `backend/agents/orchestrator.py` — `response.choices[0].message.content` → `response.content`
+- `backend/agents/applicator.py` — same pattern
+- `backend/agents/outreach.py` — same pattern
+- `backend/agents/job_scout.py` — agentic loop rewritten: checks `response.tool_calls` instead of `finish_reason == "tool_calls"`; reconstructs messages using `ToolCall` fields
+- `backend/tools/hr_finder.py` — same pattern
+- `backend/tools/resume_tools.py` — same pattern
 
-**2. uv migration (pip → uv + pyproject.toml + uv.lock)**
+**Dependency change:**
+- `litellm` removed from `backend/pyproject.toml` and `backend/uv.lock`
+- `anthropic>=0.40.0` added (resolved to `0.86.0` in lock file)
 
-| Commit | Change |
-|---|---|
-| `7a18bdf` | Create `backend/pyproject.toml` (prod deps + `[dependency-groups] dev`) |
-| `799a858` | Generate `backend/uv.lock` (inside Linux Docker container for correct platform markers) |
-| `5c7a8c5` | Update `backend/Dockerfile` — uv binary from `ghcr.io/astral-sh/uv:0.11.0`, `uv sync --frozen --no-dev` |
-| `2816486` | Fix: add `ENV PATH="/app/.venv/bin:$PATH"` (uv project mode creates venv, not system install) |
-| `d085ad5` | Remove `requirements.txt`, update devcontainer `postCreateCommand`, update `CLAUDE.md` |
-
-All 75 tests pass. Everything is on `main` and pushed.
-
-**Key uv notes for future sessions:**
-- Run tests: `docker compose run --rm backend sh -c "uv sync && pytest backend/tests/ -v"`
-- Regenerate lock file (must use Linux container): `docker run --rm -v $(pwd)/backend:/app -w /app ghcr.io/astral-sh/uv:0.11.0 uv lock`
-- Add a dep: `uv add <package>` inside the backend container (then regenerate lock)
-- Dev deps excluded from production image (`--no-dev`); pytest available only after `uv sync` inside container
+**Test suite:** 83/83 passing. All test files updated to mock `llm.complete` with `LLMResponse` instances.
 
 ---
 
-## What Was Done Previously (2026-03-24)
+## Current State of the Project
 
-Executed **Frontend UI Redesign** + **LiteLLM migration** on `feat/litellm-migration`, then merged to `main`.
+All 7 implementation phases complete:
 
-**LiteLLM migration:** Replaced Anthropic SDK with LiteLLM across all 5 agent files. Model strings prefixed `anthropic/`. Provider swappable via env vars (`ORCHESTRATOR_MODEL`, `SCOUT_MODEL`, `APPLICATOR_MODEL`, `OUTREACH_MODEL`) — no code changes needed to switch provider.
+| Phase | Status | Scope |
+|---|---|---|
+| 1 — Foundation Dashboard | Complete | Backend API, JobScout Agent, scheduler, job dashboard |
+| 2 — Application Flow | Complete | Applicator Agent, Playwright form pre-fill |
+| 3 — Cold Email Outreach | Complete | Outreach Agent, Gmail/Outlook OAuth |
+| 4 — Webhook Integration | Complete | POST /webhook/job-alerts, Orchestrator scoring |
+| 5 — LiteLLM + UI Redesign | Complete | LiteLLM migration, warm-neutral CSS, AppShell |
+| 6 — Security + uv Migration | Complete | Docker port hardening, pip → uv |
+| 7 — LLM Gateway Replacement | Complete | litellm removed, in-house backend/llm.py |
 
-**UI Redesign:** Warm-neutral CSS theme, left sidebar AppShell, TagInput component (TDD, 7 tests), upgraded Preferences page (TagInput, dropdowns, pill checkboxes).
-
----
-
-## What Was Done Previously (2026-03-23)
-
-- **Phase 4 — Webhook Integration:** `POST /webhook/job-alerts`, Orchestrator scoring agent, deduplication by URL
-- **Phase 3 — Cold Email Outreach:** Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation
-- **Phase 2 — Application Flow:** Applicator Agent, Playwright form pre-fill, application tracking pipeline
-- **Phase 1 — Foundation Dashboard:** Backend API, JobScout Agent, scheduler, job dashboard, preferences, resume upload
-
----
-
-## Current State
-
-| Area | Status |
-|---|---|
-| Phase 1 — Foundation Dashboard | ✅ Complete |
-| Phase 2 — Application Flow | ✅ Complete |
-| Phase 3 — Cold Email Outreach | ✅ Complete |
-| Phase 4 — Webhook Integration | ✅ Complete |
-| Phase 5 — LiteLLM + UI Redesign | ✅ Complete |
-| uv migration | ✅ Complete |
-| Docker port hardening | ✅ Complete |
-
-**Test count:** 75 backend tests passing.
-
-**Known technical debt (non-blocking):**
-- `datetime.utcnow()` deprecated in Python 3.12+ — affects `email_tools.py`, `auth.py`, `outreach.py`, test files
-- `JobResponse` in `routers/jobs.py:12` uses Pydantic v1 class-based config (will break on Pydantic v3)
-- `jobs.url` has both `unique=True` and a named `UniqueConstraint` — harmless for SQLite, duplicate on PostgreSQL
-- `OutreachPanel` fires PATCH on every keystroke (no debounce)
+**83 tests passing. No litellm references anywhere in the codebase.**
 
 ---
 
 ## Recommended Next Steps
 
-**Start the stack:**
-```bash
-docker compose up --build
-# Backend: http://localhost:8000
-# Frontend: http://localhost:5173
-```
-
-**Run tests:**
-```bash
-docker compose run --rm backend sh -c "uv sync && pytest backend/tests/ -v"
-docker compose exec frontend npm run test:run
-```
-
-**Potential follow-up improvements:**
-- Fix `datetime.utcnow()` deprecation warnings (search: `utcnow` in `backend/`)
-- Fix Pydantic v1 class-based config in `routers/jobs.py:12`
-- Upgrade webhook auth to HMAC-SHA256 signature verification (currently plain string equality)
-- Restyle Dashboard, Applications, Outreach, Settings page internals (Preferences was restyled; others have inline styles)
-- Add async/batch scoring to webhook router for large job payloads
-- When litellm releases a clean version ≥1.82.9, update the pin in `backend/pyproject.toml` and regenerate `uv.lock`
+1. **Add a second LLM provider** — `backend/llm.py` is structured for multi-provider support. Adding `_openai_complete()` is straightforward if OpenAI models are needed.
+2. **Fix pre-existing deprecation warnings** — 55 warnings in the test suite:
+   - `PydanticDeprecatedSince20` in `routers/jobs.py:12` — switch to `model_config = ConfigDict(...)`
+   - `datetime.utcnow()` in `routers/auth.py`, `tools/email_tools.py`, `routers/outreach.py` — switch to `datetime.now(datetime.UTC)`
+3. **Production smoke test** — start the stack with `docker compose up --build` and verify all agents can reach the Anthropic API end-to-end with a real `ANTHROPIC_API_KEY`.
