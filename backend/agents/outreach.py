@@ -1,5 +1,5 @@
 import os
-import litellm
+from backend import llm
 from backend.config import settings
 from backend.tools.hr_finder import find_hr_contact
 from backend.tools.resume_tools import tailor_resume
@@ -19,7 +19,7 @@ def generate_cover_letter(
 
     resume_content = _read_resume(resume_path)
     greeting = f"Dear {hr_name}," if hr_name else "Dear Hiring Manager,"
-    response = litellm.completion(
+    response = llm.complete(
         model=settings.OUTREACH_MODEL,
         max_tokens=1024,
         messages=[
@@ -36,7 +36,7 @@ def generate_cover_letter(
             },
         ],
     )
-    return response.choices[0].message.content or ""
+    return response.content or ""
 
 
 def run_outreach(
