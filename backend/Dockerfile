@@ -25,11 +25,11 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Install uv (pinned version matches lock file generation)
 COPY --from=ghcr.io/astral-sh/uv:0.11.0 /uv /usr/local/bin/uv
-ENV UV_SYSTEM_PYTHON=1
 
 # Copy dependency files before app code for Docker layer cache efficiency
 COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen --no-dev
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy the backend package so imports like `from backend.xxx` resolve correctly
 COPY backend/ ./backend/
