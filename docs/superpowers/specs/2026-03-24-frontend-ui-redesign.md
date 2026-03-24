@@ -15,7 +15,7 @@
 
 ## 1. CSS Theme — Warm Neutral
 
-A single `theme.css` file (imported in `main.jsx`, replacing the Vite-default `App.css` content that is no longer relevant) defines CSS custom properties used across all components.
+The existing `src/App.css` file is repurposed as the theme file — its Vite-starter content is replaced entirely with the tokens and resets below. `main.jsx` already imports `./App.css`, so no import change is needed.
 
 ### Palette
 
@@ -38,7 +38,7 @@ A single `theme.css` file (imported in `main.jsx`, replacing the Vite-default `A
 
 No dark-mode variant in this phase. The existing `index.css` dark-mode block is left in place (it only affects variables that aren't used by the new components).
 
-### Global resets (in `theme.css`)
+### Global resets (in `App.css`)
 
 ```css
 body { background: var(--bg); color: var(--text-primary); font-family: system-ui, 'Segoe UI', Roboto, sans-serif; margin: 0; }
@@ -127,9 +127,10 @@ TagInput({ values: string[], onChange: (values: string[]) => void, placeholder?:
 **CSS:** `src/components/TagInput.css` — `.tag-input-container`, `.tag`, `.tag-remove`, `.tag-input`.
 
 **Preferences integration:**
-- `form.job_titles` changes from `string` to `string[]`.
+- `form.job_titles` initial state changes from `''` to `[]` (`useState` default updated).
 - `handleSave` no longer needs `.split(',')` for job_titles — it sends the array directly.
 - The `useEffect` that loads preferences maps `pref.job_titles` directly (already an array from the API).
+- `TagInput`'s inner `<input>` carries `id="job_titles"` so `<label htmlFor="job_titles">` still resolves — `Preferences.test.jsx` label query is unaffected.
 
 ### 4b. Experience Level — Dropdown
 
@@ -142,40 +143,36 @@ Replace `<input>` with `<select>`. Options (value = label):
 | `senior-level` | Senior-level |
 | `executive-level` | Executive-level |
 
-No default selected — first option shows as placeholder if value is empty.
+First option is an empty placeholder: `<option value="">Select level…</option>`, consistent with Domain.
 
 ### 4c. Domain — Dropdown
 
-Replace `<input>` with `<select>`. Options:
+Replace `<input>` with `<select>`. First option is an empty placeholder: `<option value="">Select domain…</option>`.
 
-| Value |
-|---|
-| `backend` |
-| `frontend` |
-| `full-stack` |
-| `data-science` |
-| `ml-ai` |
-| `devops-infra` |
-| `mobile` |
-| `security` |
-| `data-engineering` |
-| `sre-platform` |
-| `product-management` |
-| `design-ux` |
-| `qa-testing` |
-| `game-development` |
-| `blockchain-web3` |
-| `embedded-systems` |
-
-Labels are title-cased human-readable equivalents (e.g. `ml-ai` → "ML / AI", `devops-infra` → "DevOps / Infrastructure").
-
-First option is an empty placeholder: `<option value="">Select domain…</option>`.
+| Value | Label |
+|---|---|
+| `backend` | Backend Engineering |
+| `frontend` | Frontend Engineering |
+| `full-stack` | Full Stack |
+| `data-science` | Data Science |
+| `ml-ai` | ML / AI |
+| `devops-infra` | DevOps / Infrastructure |
+| `mobile` | Mobile (iOS/Android) |
+| `security` | Security |
+| `data-engineering` | Data Engineering |
+| `sre-platform` | SRE / Platform |
+| `product-management` | Product Management |
+| `design-ux` | Design / UX |
+| `qa-testing` | QA / Testing |
+| `game-development` | Game Development |
+| `blockchain-web3` | Blockchain / Web3 |
+| `embedded-systems` | Embedded Systems |
 
 ### 4d. Company Size — Checkbox Group
 
 **Component:** inline in `Preferences.jsx` (no separate component needed — it's a single-use list of 6 items).
 
-`form.company_size` changes from `string` (comma-separated) to `string[]`.
+`form.company_size` initial state changes from `''` to `[]` (`useState` default updated). It is no longer a comma-separated string.
 
 Available options (value / label):
 
@@ -198,7 +195,7 @@ Rendered as pill-style `<label>` elements containing a hidden `<input type="chec
 
 | File | Action |
 |---|---|
-| `src/App.css` | Clear Vite-starter content; keep file (imported by `main.jsx`) |
+| `src/App.css` | Replace Vite-starter content with CSS tokens + global resets (theme file) |
 | `src/index.css` | Keep as-is (design tokens for remaining Vite defaults) |
 | `src/App.jsx` | Wrap routes in `<AppShell>` |
 | `src/components/AppShell.jsx` | New — sidebar + main layout |
@@ -206,7 +203,7 @@ Rendered as pill-style `<label>` elements containing a hidden `<input type="chec
 | `src/components/TagInput.jsx` | New — tag input component |
 | `src/components/TagInput.css` | New — tag input styles |
 | `src/components/Form.css` | New — shared form element styles |
-| `src/pages/Preferences.jsx` | Modify — use TagInput, dropdowns, checkbox group, Form.css |
+| `src/pages/Preferences.jsx` | Modify — use TagInput, dropdowns, checkbox group; import `../components/Form.css` |
 
 Other pages (Dashboard, Applications, Outreach, Settings) get the improved layout automatically from `AppShell` and the ambient CSS. Their internal styles (inline `style={}` props) are **not** changed in this phase — only the shell and Preferences are explicitly restyled.
 
@@ -224,7 +221,7 @@ Existing tests are unaffected by CSS changes. The `TagInput` component requires 
 - Backspace on empty input removes last tag.
 - Duplicate values are not added.
 
-`Preferences.test.jsx` currently mocks the API and checks the form renders — it does not assert on field types, so no changes needed there.
+`Preferences.test.jsx` uses `getByLabelText(/job titles/i)` to find the field. This continues to work because `TagInput` renders its inner `<input id="job_titles">` and `Preferences.jsx` keeps `<label htmlFor="job_titles">` — no changes needed to the test.
 
 ---
 
