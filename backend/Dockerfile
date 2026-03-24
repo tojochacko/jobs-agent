@@ -23,9 +23,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PLAYWRIGHT_BROWSERS_PATH=/usr/lib/chromium
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
-# Build context is the project root, so requirements.txt is at backend/requirements.txt
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv (pinned version matches lock file generation)
+COPY --from=ghcr.io/astral-sh/uv:0.11.0 /uv /usr/local/bin/uv
+ENV UV_SYSTEM_PYTHON=1
+
+# Copy dependency files before app code for Docker layer cache efficiency
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --frozen --no-dev
 
 # Copy the backend package so imports like `from backend.xxx` resolve correctly
 COPY backend/ ./backend/
