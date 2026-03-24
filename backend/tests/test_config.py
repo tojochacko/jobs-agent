@@ -36,5 +36,5 @@ def test_default_values():
         reload(cfg)
         s = cfg.Settings()
         assert s.JOB_MATCH_THRESHOLD == 0.6
-        assert s.SCOUT_MODEL == "claude-haiku-4-5"
+        assert s.SCOUT_MODEL == "anthropic/claude-haiku-4-5"
         assert s.WEBHOOK_BYPASS_THRESHOLD is False

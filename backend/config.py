@@ -3,11 +3,13 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    ANTHROPIC_API_KEY: str
-    ORCHESTRATOR_MODEL: str = "claude-haiku-4-5"
-    SCOUT_MODEL: str = "claude-haiku-4-5"
-    APPLICATOR_MODEL: str = "claude-haiku-4-5"
-    OUTREACH_MODEL: str = "claude-haiku-4-5"
+    ANTHROPIC_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    ORCHESTRATOR_MODEL: str = "anthropic/claude-haiku-4-5"
+    SCOUT_MODEL: str = "anthropic/claude-haiku-4-5"
+    APPLICATOR_MODEL: str = "anthropic/claude-haiku-4-5"
+    OUTREACH_MODEL: str = "anthropic/claude-haiku-4-5"
 
     SERP_API_KEY: str = ""
     JOB_MATCH_THRESHOLD: float = 0.6
