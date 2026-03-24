@@ -141,3 +141,25 @@ def test_complete_anthropic_assistant_tool_calls_translated():
     assert asst_msg["content"][0]["type"] == "tool_use"
     assert asst_msg["content"][0]["id"] == "tc_1"
     assert asst_msg["content"][0]["input"] == {"query": "Python"}  # dict, not string
+
+
+def test_complete_anthropic_assistant_tool_calls_dict_format():
+    """Assistant messages with internal dict-format tool_calls (no 'function' key) are translated correctly."""
+    with patch("backend.llm.anthropic.Anthropic") as MockClient:
+        MockClient.return_value.messages.create.return_value = _anthropic_text_resp("done")
+        complete(
+            "anthropic/claude-haiku-4-5",
+            [
+                {"role": "user", "content": "Go"},
+                {"role": "assistant", "content": None, "tool_calls": [
+                    {"id": "tc_1", "name": "search_jobs", "arguments": {"query": "Python"}},
+                ]},
+                {"role": "tool", "tool_call_id": "tc_1", "name": "search_jobs", "content": "[]"},
+            ],
+        )
+    call_kwargs = MockClient.return_value.messages.create.call_args.kwargs
+    asst_msg = call_kwargs["messages"][1]
+    assert asst_msg["role"] == "assistant"
+    assert asst_msg["content"][0]["type"] == "tool_use"
+    assert asst_msg["content"][0]["id"] == "tc_1"
+    assert asst_msg["content"][0]["input"] == {"query": "Python"}

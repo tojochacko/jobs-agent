@@ -181,7 +181,7 @@ DATABASE_URL=sqlite:///./jobapplier.db
 - **tailor_resume shared tool:** Used by both Applicator (`output_format="text"` for form fields) and Outreach (`output_format="pdf"` for email attachment) — defined in `tools/resume_tools.py`.
 - **Resume upload constraints:** PDF only; 50 MB max. Validated on both client (`Preferences.jsx`) and server (`routers/resume.py`).
 - **LiteLLM provider routing:** All agents call `litellm.completion()`. The model string prefix determines the provider (`anthropic/`, `openai/`, `gemini/`). Swap provider by changing the model env var — no code changes needed.
-- **litellm pinned to `==1.82.6`:** Versions 1.82.7 and 1.82.8 contained a malicious `.pth` file (supply chain attack). Do not upgrade until a clean version ≥1.82.9 is confirmed; then update `backend/pyproject.toml` and regenerate `uv.lock`.
+- **LLM gateway: in-house `backend/llm.py`:** `litellm` was removed (versions 1.82.7/1.82.8 contained a supply chain attack). All agents now call `llm.complete(model, messages, ...)` which dispatches to the `anthropic` SDK. To add a new provider, add a new `_<provider>_complete()` adapter in `backend/llm.py`.
 - **Docker ports bound to `127.0.0.1`:** Both `:8000` and `:5173` are only reachable from localhost. Do not change to `0.0.0.0` without understanding the LAN exposure implications.
 - **uv + lock file:** Dependencies are managed via `backend/pyproject.toml` and pinned in `backend/uv.lock`. Production image uses `uv sync --frozen --no-dev` (no pip). Dev deps (pytest, pytest-mock) are in `[dependency-groups] dev` and excluded from the production image.
 
