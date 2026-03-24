@@ -1,7 +1,7 @@
 import json
 import logging
-import litellm
 
+from backend import llm
 from backend.config import settings
 from backend.tools.serp import search_people
 
@@ -36,7 +36,7 @@ def find_hr_contact(company: str, job_title: str) -> dict:
     )
 
     try:
-        response = litellm.completion(
+        response = llm.complete(
             model=settings.OUTREACH_MODEL,
             max_tokens=256,
             messages=[
@@ -48,7 +48,7 @@ def find_hr_contact(company: str, job_title: str) -> dict:
         logger.warning(f"LLM extraction failed: {e}")
         return {"hr_name": "", "hr_email": "", "hr_confidence": "unknown"}
 
-    content = response.choices[0].message.content
+    content = response.content
     if content:
         try:
             return json.loads(content)

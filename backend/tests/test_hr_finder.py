@@ -1,7 +1,8 @@
 # backend/tests/test_hr_finder.py
+import json
 import pytest
 from unittest.mock import patch, MagicMock
-
+from backend.llm import LLMResponse
 
 MOCK_SEARCH_RESULTS = [
     {
@@ -13,15 +14,10 @@ MOCK_SEARCH_RESULTS = [
 
 
 def test_find_hr_contact_returns_dict():
-    msg = MagicMock()
-    msg.content = '{"hr_name": "Jane Smith", "hr_email": "j.smith@acme.com", "hr_confidence": "search_result"}'
-    choice = MagicMock()
-    choice.message = msg
-    mock_response = MagicMock()
-    mock_response.choices = [choice]
-
+    contact_json = '{"hr_name": "Jane Smith", "hr_email": "j.smith@acme.com", "hr_confidence": "search_result"}'
     with patch("backend.tools.hr_finder.search_people", return_value=MOCK_SEARCH_RESULTS), \
-         patch("backend.tools.hr_finder.litellm.completion", return_value=mock_response):
+         patch("backend.tools.hr_finder.llm.complete") as mock_complete:
+        mock_complete.return_value = LLMResponse(content=contact_json)
         from backend.tools.hr_finder import find_hr_contact
         result = find_hr_contact(company="Acme Corp", job_title="Python Engineer")
     assert isinstance(result, dict)
