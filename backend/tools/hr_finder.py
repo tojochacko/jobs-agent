@@ -1,7 +1,6 @@
 import json
 import logging
-
-import anthropic
+import litellm
 
 from backend.config import settings
 from backend.tools.serp import search_people
@@ -37,22 +36,23 @@ def find_hr_contact(company: str, job_title: str) -> dict:
     )
 
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = client.messages.create(
+        response = litellm.completion(
             model=settings.OUTREACH_MODEL,
             max_tokens=256,
-            system=EXTRACT_SYSTEM,
-            messages=[{"role": "user", "content": f"Company: {company}\nJob: {job_title}\n\nSearch results:\n{snippets}"}],
+            messages=[
+                {"role": "system", "content": EXTRACT_SYSTEM},
+                {"role": "user", "content": f"Company: {company}\nJob: {job_title}\n\nSearch results:\n{snippets}"},
+            ],
         )
     except Exception as e:
-        logger.warning(f"Claude extraction failed: {e}")
+        logger.warning(f"LLM extraction failed: {e}")
         return {"hr_name": "", "hr_email": "", "hr_confidence": "unknown"}
 
-    for block in response.content:
-        if getattr(block, "type", None) == "text":
-            try:
-                return json.loads(block.text)
-            except json.JSONDecodeError:
-                pass
+    content = response.choices[0].message.content
+    if content:
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            pass
 
     return {"hr_name": "", "hr_email": "", "hr_confidence": "unknown"}
