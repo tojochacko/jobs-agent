@@ -1,6 +1,6 @@
 import json
 import logging
-import litellm
+from backend import llm
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -31,15 +31,15 @@ def score_job(job_data: dict, preferences: dict) -> float:
         f"Score this job (0.0–1.0):"
     )
     try:
-        response = litellm.completion(
+        response = llm.complete(
             model=settings.ORCHESTRATOR_MODEL,
-            max_tokens=16,
             messages=[
                 {"role": "system", "content": SCORE_SYSTEM},
                 {"role": "user", "content": prompt},
             ],
+            max_tokens=16,
         )
-        raw = response.choices[0].message.content.strip()
+        raw = response.content.strip()
         score = float(raw)
         return max(0.0, min(1.0, score))
     except Exception as e:

@@ -1,4 +1,6 @@
-from unittest.mock import patch, MagicMock
+# backend/tests/test_orchestrator.py
+from unittest.mock import patch
+from backend.llm import LLMResponse, ToolCall
 
 PREFERENCES = {
     "job_titles": ["Python Engineer"],
@@ -26,19 +28,9 @@ LOW_MATCH_JOB = {
 }
 
 
-def _mock_score_response(score: float):
-    msg = MagicMock()
-    msg.content = str(score)
-    choice = MagicMock()
-    choice.message = msg
-    resp = MagicMock()
-    resp.choices = [choice]
-    return resp
-
-
 def test_score_job_returns_float():
-    with patch("backend.agents.orchestrator.litellm.completion") as mock_completion:
-        mock_completion.return_value = _mock_score_response(0.92)
+    with patch("backend.agents.orchestrator.llm.complete") as mock_complete:
+        mock_complete.return_value = LLMResponse(content="0.92")
         from backend.agents.orchestrator import score_job
         score = score_job(HIGH_MATCH_JOB, PREFERENCES)
     assert isinstance(score, float)
@@ -47,24 +39,16 @@ def test_score_job_returns_float():
 
 
 def test_score_job_handles_malformed_response():
-    """If agent returns non-numeric text, return 0.0 safely."""
-    msg = MagicMock()
-    msg.content = "I cannot score this job."
-    choice = MagicMock()
-    choice.message = msg
-    resp = MagicMock()
-    resp.choices = [choice]
-    with patch("backend.agents.orchestrator.litellm.completion") as mock_completion:
-        mock_completion.return_value = resp
+    with patch("backend.agents.orchestrator.llm.complete") as mock_complete:
+        mock_complete.return_value = LLMResponse(content="I cannot score this job.")
         from backend.agents.orchestrator import score_job
         score = score_job(LOW_MATCH_JOB, PREFERENCES)
     assert score == 0.0
 
 
 def test_score_job_clamps_to_valid_range():
-    """Scores outside 0.0–1.0 are clamped."""
-    with patch("backend.agents.orchestrator.litellm.completion") as mock_completion:
-        mock_completion.return_value = _mock_score_response(1.5)
+    with patch("backend.agents.orchestrator.llm.complete") as mock_complete:
+        mock_complete.return_value = LLMResponse(content="1.5")
         from backend.agents.orchestrator import score_job
         score = score_job(HIGH_MATCH_JOB, PREFERENCES)
     assert score == 1.0
