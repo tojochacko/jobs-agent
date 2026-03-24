@@ -1,30 +1,21 @@
+# backend/tests/test_resume_tools.py
 import os
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+from backend.llm import LLMResponse, ToolCall
 
 
 @pytest.fixture
 def sample_resume(tmp_path):
-    """Write a plain-text .txt file as a stand-in for resume parsing."""
     f = tmp_path / "resume.txt"
     f.write_text("John Doe\nSenior Python Engineer\nExperience: FastAPI, PostgreSQL, Docker")
     return str(f)
 
 
-def _mock_llm_response(text: str):
-    msg = MagicMock()
-    msg.content = text
-    choice = MagicMock()
-    choice.message = msg
-    resp = MagicMock()
-    resp.choices = [choice]
-    return resp
-
-
 def test_tailor_resume_text_returns_string(sample_resume):
-    with patch("backend.tools.resume_tools.litellm.completion") as mock_completion:
-        mock_completion.return_value = _mock_llm_response("Tailored resume text for Python role")
+    with patch("backend.tools.resume_tools.llm.complete") as mock_complete:
+        mock_complete.return_value = LLMResponse(content="Tailored resume text for Python role")
         from backend.tools.resume_tools import tailor_resume
         result = tailor_resume(
             job_description="Senior Python Engineer at Acme",
@@ -38,9 +29,9 @@ def test_tailor_resume_text_returns_string(sample_resume):
 
 def test_tailor_resume_pdf_writes_file(sample_resume, tmp_path):
     output_path = str(tmp_path / "tailored.pdf")
-    with patch("backend.tools.resume_tools.litellm.completion") as mock_completion, \
+    with patch("backend.tools.resume_tools.llm.complete") as mock_complete, \
          patch("backend.tools.resume_tools._write_pdf") as mock_pdf:
-        mock_completion.return_value = _mock_llm_response("Tailored resume content")
+        mock_complete.return_value = LLMResponse(content="Tailored resume content")
         from backend.tools.resume_tools import tailor_resume
         result = tailor_resume(
             job_description="Senior Python Engineer at Acme",
@@ -53,8 +44,6 @@ def test_tailor_resume_pdf_writes_file(sample_resume, tmp_path):
 
 
 def test_tailor_resume_reads_resume_content(sample_resume):
-    with patch("backend.tools.resume_tools.litellm.completion") as mock_completion:
-        mock_completion.return_value = _mock_llm_response("output")
-        from backend.tools.resume_tools import tailor_resume, _read_resume
-        content = _read_resume(sample_resume)
-        assert "Senior Python Engineer" in content
+    from backend.tools.resume_tools import _read_resume
+    content = _read_resume(sample_resume)
+    assert "Senior Python Engineer" in content
