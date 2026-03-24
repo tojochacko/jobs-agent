@@ -22,6 +22,7 @@ An autonomous job search assistant that discovers matching jobs, pre-fills appli
 | Email | Gmail or Outlook via OAuth 2.0 |
 | Database | SQLite via SQLAlchemy (PostgreSQL-compatible schema) |
 | Scheduling | APScheduler |
+| Package Management | uv (Python) · npm (Node) |
 | Containerisation | Docker + Docker Compose |
 | Testing | pytest (backend) · Vitest + Testing Library (frontend) |
 
@@ -163,8 +164,8 @@ The container mounts the source with hot-reload on both `:8000` (backend) and `:
 ### Running tests
 
 ```bash
-# Backend tests
-docker compose exec backend pytest
+# Backend tests (uv sync adds dev deps to the venv first — they're excluded from the prod image)
+docker compose run --rm backend sh -c "uv sync && pytest backend/tests/ -v"
 
 # Frontend tests
 docker compose exec frontend npm run test:run
@@ -195,6 +196,8 @@ JobApplierAgent/
 │       ├── pages/           # Dashboard, Applications, Outreach, Settings
 │       ├── components/      # AppShell, TagInput, JobCard, ReviewPanel, OutreachPanel, StatusBadge
 │       └── api/client.js    # Typed API client
+├── backend/pyproject.toml   # Python dependencies (uv)
+├── backend/uv.lock          # Deterministic lock file
 ├── .devcontainer/           # VS Code Dev Container config
 ├── docker-compose.yml
 └── .env                     # Your credentials (not committed)

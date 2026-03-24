@@ -73,6 +73,8 @@ JobApplierAgent/
 │       └── App.jsx               # React Router setup — routes wrapped in AppShell
 │
 ├── uploads/                      # Resume file storage (PDF only, max 50 MB)
+├── backend/pyproject.toml        # Python project metadata + dependencies (uv)
+├── backend/uv.lock               # Deterministic lock file (all transitive pins)
 ├── docs/superpowers/
 │   ├── specs/                    # Design spec (source of truth)
 │   └── plans/                    # Phase implementation plans
@@ -104,19 +106,26 @@ React Frontend (Vite @ :5173)
 
 Run commands inside containers (when not using the devcontainer terminal):
 ```bash
-docker compose exec backend pytest           # run backend tests
-docker compose exec backend ruff check .     # lint backend
-docker compose exec frontend npm run test:run  # run frontend tests
-docker compose exec frontend npm run lint    # lint frontend
+docker compose run --rm backend sh -c "uv sync && pytest backend/tests/"  # run backend tests
+docker compose exec backend ruff check .                                   # lint backend
+docker compose exec frontend npm run test:run                              # run frontend tests
+docker compose exec frontend npm run lint                                  # lint frontend
 ```
+
+> **Why `uv sync` before pytest?** The production image is built with `--no-dev`, so pytest is not installed. Running `uv sync` inside the container adds dev deps to the venv before running tests.
 
 ## Development Commands (inside containers)
 
 **Backend:**
 ```
-uv sync                            # install/update dependencies
+uv sync                            # install/update dependencies (incl. dev deps)
 uvicorn main:app --reload          # starts at :8000
-pytest                             # run all tests
+pytest backend/tests/              # run all tests (after uv sync)
+```
+
+To regenerate the lock file (must use a Linux container — not host uv):
+```bash
+docker run --rm -v $(pwd)/backend:/app -w /app ghcr.io/astral-sh/uv:0.11.0 uv lock
 ```
 
 **Frontend:**
@@ -172,6 +181,9 @@ DATABASE_URL=sqlite:///./jobapplier.db
 - **tailor_resume shared tool:** Used by both Applicator (`output_format="text"` for form fields) and Outreach (`output_format="pdf"` for email attachment) — defined in `tools/resume_tools.py`.
 - **Resume upload constraints:** PDF only; 50 MB max. Validated on both client (`Preferences.jsx`) and server (`routers/resume.py`).
 - **LiteLLM provider routing:** All agents call `litellm.completion()`. The model string prefix determines the provider (`anthropic/`, `openai/`, `gemini/`). Swap provider by changing the model env var — no code changes needed.
+- **litellm pinned to `==1.82.6`:** Versions 1.82.7 and 1.82.8 contained a malicious `.pth` file (supply chain attack). Do not upgrade until a clean version ≥1.82.9 is confirmed; then update `backend/pyproject.toml` and regenerate `uv.lock`.
+- **Docker ports bound to `127.0.0.1`:** Both `:8000` and `:5173` are only reachable from localhost. Do not change to `0.0.0.0` without understanding the LAN exposure implications.
+- **uv + lock file:** Dependencies are managed via `backend/pyproject.toml` and pinned in `backend/uv.lock`. Production image uses `uv sync --frozen --no-dev` (no pip). Dev deps (pytest, pytest-mock) are in `[dependency-groups] dev` and excluded from the production image.
 
 ## API Endpoints
 
@@ -203,6 +215,7 @@ DATABASE_URL=sqlite:///./jobapplier.db
 | 3 — Cold Email Outreach | Complete | Outreach Agent, Gmail/Outlook OAuth, HR contact lookup, cover letter generation |
 | 4 — Webhook Integration | Complete | `POST /webhook/job-alerts`, Orchestrator scoring agent, external agent ingestion, deduplication |
 | 5 — LiteLLM + UI Redesign | Complete | LiteLLM migration (all agents), warm-neutral CSS theme, left sidebar AppShell, TagInput component, Preferences page upgrade |
+| 6 — Security + uv Migration | Complete | litellm supply chain pin, Docker port hardening (127.0.0.1), pip → uv + pyproject.toml + uv.lock |
 
 ## Testing Approach
 
