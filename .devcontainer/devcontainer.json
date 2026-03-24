@@ -19,7 +19,7 @@
   // Forward both service ports so the browser can reach them from the host
   "forwardPorts": [8000, 5173],
 
-  "postCreateCommand": "pip install -r /app/requirements.txt",
+  "postCreateCommand": "cd /workspaces/JobApplierAgent/backend && uv sync",
 
   "customizations": {
     "vscode": {

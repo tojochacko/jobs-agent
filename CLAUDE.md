@@ -114,7 +114,7 @@ docker compose exec frontend npm run lint    # lint frontend
 
 **Backend:**
 ```
-pip install -r requirements.txt
+uv sync                            # install/update dependencies
 uvicorn main:app --reload          # starts at :8000
 pytest                             # run all tests
 ```
