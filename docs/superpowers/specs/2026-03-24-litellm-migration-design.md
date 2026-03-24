@@ -109,19 +109,32 @@ TOOLS = [{"type": "function", "function": {"name": "search_jobs", "description":
 | `type == "text"` block for final output | `response.choices[0].message.content` |
 | `tool_result` user message with `tool_use_id` | `role: "tool"` message with `tool_call_id` |
 
-### Tool result message format
+### Tool result messages
+
+In Anthropic's format, all tool results are bundled as a list inside a single `user` message. In OpenAI / LiteLLM format, each tool result is its own separate `role: "tool"` message appended individually to `messages`.
 
 **Before:**
 ```python
-{"type": "tool_result", "tool_use_id": block.id, "content": result}
+tool_results = []
+for block in response.content:
+    if getattr(block, "type", None) == "tool_use":
+        result = _execute_tool(block.name, block.input)
+        tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
+messages.append({"role": "user", "content": tool_results})
 ```
 
 **After:**
 ```python
-{"role": "tool", "tool_call_id": tc.id, "content": result}
+for tc in response.choices[0].message.tool_calls:
+    result = _execute_tool(tc.function.name, json.loads(tc.function.arguments))
+    messages.append({"role": "tool", "tool_call_id": tc.id, "name": tc.function.name, "content": result})
 ```
 
+Note: each tool result message requires both `tool_call_id` and `name` fields.
+
 ### Assistant message appended to history
+
+`response.choices[0].message` is a `litellm.utils.Message` Pydantic object — it must be converted to a plain dict before appending to `messages`, otherwise serialization fails.
 
 **Before:**
 ```python
@@ -130,7 +143,19 @@ messages.append({"role": "assistant", "content": response.content})
 
 **After:**
 ```python
-messages.append(response.choices[0].message)
+msg = response.choices[0].message
+messages.append({
+    "role": "assistant",
+    "content": msg.content,
+    "tool_calls": [
+        {
+            "id": tc.id,
+            "type": "function",
+            "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+        }
+        for tc in (msg.tool_calls or [])
+    ],
+})
 ```
 
 ---
@@ -186,6 +211,8 @@ def _end_turn_response(scored_jobs):
     resp.choices = [choice]
     return resp
 ```
+
+All three tests in `test_job_scout_agent.py` need shape rewrites — not just the two that use `_tool_use_response` / `_end_turn_response`. The third test (`test_run_job_scout_handles_malformed_response`) constructs its own response object inline with Anthropic-shaped attributes (`resp.stop_reason`, `block.type`, `block.text`) and must be rewritten to OpenAI shape alongside the helpers.
 
 No new tests needed — existing coverage is sufficient once updated.
 
