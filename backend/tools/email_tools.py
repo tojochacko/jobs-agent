@@ -1,6 +1,6 @@
 import base64
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -47,7 +47,7 @@ def get_valid_token(provider: str, db: Session) -> str:
     if not record:
         raise ValueError(f"No OAuth token found for provider '{provider}'. Connect via /auth/email/connect.")
 
-    if datetime.utcnow() < record.expires_at:
+    if datetime.now(timezone.utc).replace(tzinfo=None) < record.expires_at:
         return record.access_token
 
     # Token expired — refresh
@@ -58,7 +58,7 @@ def get_valid_token(provider: str, db: Session) -> str:
         refreshed = _refresh_outlook_token(record.refresh_token)
 
     record.access_token = refreshed["access_token"]
-    record.expires_at = datetime.utcnow() + timedelta(seconds=refreshed.get("expires_in", 3600))
+    record.expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=refreshed.get("expires_in", 3600))
     db.commit()
     return record.access_token
 

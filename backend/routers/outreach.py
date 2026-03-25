@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -130,7 +130,7 @@ def send_outreach(outreach_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
     record.status = "sent"
-    record.sent_at = datetime.utcnow()
+    record.sent_at = datetime.now(timezone.utc).replace(tzinfo=None)
     if job:
         job.status = "emailed"
     db.commit()

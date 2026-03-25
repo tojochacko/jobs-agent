@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -82,7 +82,7 @@ def email_callback(code: str, db: Session = Depends(get_db)):
     else:
         token_data = exchange_outlook_code(code)
 
-    expires_at = datetime.utcnow() + timedelta(seconds=token_data.get("expires_in", 3600))
+    expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=token_data.get("expires_in", 3600))
     record = db.query(OAuthToken).filter(OAuthToken.provider == settings.EMAIL_PROVIDER).first()
     if not record:
         record = OAuthToken(provider=settings.EMAIL_PROVIDER)

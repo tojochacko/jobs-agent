@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, UniqueConstraint
 from backend.database import Base
 
@@ -13,7 +13,7 @@ class Preference(Base):
     domain = Column(String)
     company_size = Column(Text)                      # JSON string
     industry = Column(Text)                          # JSON string
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class Resume(Base):
@@ -21,7 +21,7 @@ class Resume(Base):
     id = Column(Integer, primary_key=True)
     filename = Column(String, nullable=False)
     filepath = Column(String, nullable=False)        # path on disk
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class Job(Base):
@@ -37,7 +37,7 @@ class Job(Base):
     # 'new'|'saved'|'dismissed'|'applying'|'applied'|'emailing'|'emailed'|'error'
     status = Column(String, default="new")
     error_reason = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     __table_args__ = (UniqueConstraint("url", name="uq_jobs_url"),)
 
 
@@ -61,7 +61,7 @@ class OAuthToken(Base):
     access_token = Column(Text, nullable=False)
     refresh_token = Column(Text, nullable=False)
     expires_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class Outreach(Base):
