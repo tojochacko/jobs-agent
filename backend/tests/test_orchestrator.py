@@ -1,6 +1,7 @@
 # backend/tests/test_orchestrator.py
 from unittest.mock import patch
 from backend.llm import LLMResponse, ToolCall
+from backend.agents.orchestrator import score_job
 
 PREFERENCES = {
     "job_titles": ["Python Engineer"],
@@ -31,7 +32,6 @@ LOW_MATCH_JOB = {
 def test_score_job_returns_float():
     with patch("backend.agents.orchestrator.llm.complete") as mock_complete:
         mock_complete.return_value = LLMResponse(content="0.92")
-        from backend.agents.orchestrator import score_job
         score = score_job(HIGH_MATCH_JOB, PREFERENCES)
     assert isinstance(score, float)
     assert 0.0 <= score <= 1.0
@@ -41,7 +41,6 @@ def test_score_job_returns_float():
 def test_score_job_handles_malformed_response():
     with patch("backend.agents.orchestrator.llm.complete") as mock_complete:
         mock_complete.return_value = LLMResponse(content="I cannot score this job.")
-        from backend.agents.orchestrator import score_job
         score = score_job(LOW_MATCH_JOB, PREFERENCES)
     assert score == 0.0
 
@@ -49,6 +48,5 @@ def test_score_job_handles_malformed_response():
 def test_score_job_clamps_to_valid_range():
     with patch("backend.agents.orchestrator.llm.complete") as mock_complete:
         mock_complete.return_value = LLMResponse(content="1.5")
-        from backend.agents.orchestrator import score_job
         score = score_job(HIGH_MATCH_JOB, PREFERENCES)
     assert score == 1.0

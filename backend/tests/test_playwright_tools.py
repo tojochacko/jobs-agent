@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
+from backend.tools.playwright_tools import fetch_application_form
 
 
 def make_mock_input(name, input_type="text", label="", placeholder=""):
@@ -23,7 +24,6 @@ def test_fetch_application_form_returns_field_list():
     with patch("backend.tools.playwright_tools.sync_playwright") as mock_pw:
         mock_pw.return_value.__enter__.return_value.chromium.launch.return_value \
             .__enter__.return_value.new_page.return_value = mock_page
-        from backend.tools.playwright_tools import fetch_application_form
         result = fetch_application_form("https://acme.com/apply")
 
     assert isinstance(result["fields"], list)
@@ -35,7 +35,6 @@ def test_fetch_application_form_returns_field_list():
 def test_fetch_application_form_returns_manual_required_on_error():
     with patch("backend.tools.playwright_tools.sync_playwright") as mock_pw:
         mock_pw.return_value.__enter__.return_value.chromium.launch.side_effect = Exception("browser error")
-        from backend.tools.playwright_tools import fetch_application_form
         result = fetch_application_form("https://acme.com/apply")
     assert result["status"] == "manual_required"
     assert result["url"] == "https://acme.com/apply"

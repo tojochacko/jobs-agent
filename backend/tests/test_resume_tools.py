@@ -4,6 +4,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 from backend.llm import LLMResponse, ToolCall
+from backend.tools.resume_tools import tailor_resume, _read_resume
 
 
 @pytest.fixture
@@ -16,7 +17,6 @@ def sample_resume(tmp_path):
 def test_tailor_resume_text_returns_string(sample_resume):
     with patch("backend.tools.resume_tools.llm.complete") as mock_complete:
         mock_complete.return_value = LLMResponse(content="Tailored resume text for Python role")
-        from backend.tools.resume_tools import tailor_resume
         result = tailor_resume(
             job_description="Senior Python Engineer at Acme",
             master_resume_path=sample_resume,
@@ -32,7 +32,6 @@ def test_tailor_resume_pdf_writes_file(sample_resume, tmp_path):
     with patch("backend.tools.resume_tools.llm.complete") as mock_complete, \
          patch("backend.tools.resume_tools._write_pdf") as mock_pdf:
         mock_complete.return_value = LLMResponse(content="Tailored resume content")
-        from backend.tools.resume_tools import tailor_resume
         result = tailor_resume(
             job_description="Senior Python Engineer at Acme",
             master_resume_path=sample_resume,
@@ -44,6 +43,5 @@ def test_tailor_resume_pdf_writes_file(sample_resume, tmp_path):
 
 
 def test_tailor_resume_reads_resume_content(sample_resume):
-    from backend.tools.resume_tools import _read_resume
     content = _read_resume(sample_resume)
     assert "Senior Python Engineer" in content

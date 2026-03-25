@@ -3,6 +3,7 @@ import json
 import pytest
 from unittest.mock import patch, MagicMock
 from backend.llm import LLMResponse
+from backend.tools.hr_finder import find_hr_contact
 
 MOCK_SEARCH_RESULTS = [
     {
@@ -18,7 +19,6 @@ def test_find_hr_contact_returns_dict():
     with patch("backend.tools.hr_finder.search_people", return_value=MOCK_SEARCH_RESULTS), \
          patch("backend.tools.hr_finder.llm.complete") as mock_complete:
         mock_complete.return_value = LLMResponse(content=contact_json)
-        from backend.tools.hr_finder import find_hr_contact
         result = find_hr_contact(company="Acme Corp", job_title="Python Engineer")
     assert isinstance(result, dict)
     assert "hr_name" in result
@@ -28,7 +28,6 @@ def test_find_hr_contact_returns_dict():
 
 def test_find_hr_contact_returns_unknown_when_no_results():
     with patch("backend.tools.hr_finder.search_people", return_value=[]):
-        from backend.tools.hr_finder import find_hr_contact
         result = find_hr_contact(company="Unknown Co", job_title="Engineer")
     assert result["hr_confidence"] == "unknown"
     assert result["hr_email"] == ""
@@ -36,6 +35,5 @@ def test_find_hr_contact_returns_unknown_when_no_results():
 
 def test_find_hr_contact_handles_search_failure():
     with patch("backend.tools.hr_finder.search_people", side_effect=Exception("API error")):
-        from backend.tools.hr_finder import find_hr_contact
         result = find_hr_contact(company="Acme", job_title="Engineer")
     assert result["hr_confidence"] == "unknown"

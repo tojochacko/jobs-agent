@@ -3,6 +3,7 @@ import json
 import pytest
 from unittest.mock import patch
 from backend.llm import LLMResponse, ToolCall
+from backend.agents.applicator import run_applicator
 
 MOCK_FORM = {
     "fields": [
@@ -17,7 +18,6 @@ MOCK_TAILORED = "John Doe\nSenior Python Engineer\nTailored for Acme role"
 
 
 def test_run_applicator_returns_result():
-    from backend.agents.applicator import run_applicator
     payload = json.dumps({"first_name": "John", "email": "john@example.com"})
     with patch("backend.agents.applicator.llm.complete") as mock_complete, \
          patch("backend.agents.applicator.fetch_application_form", return_value=MOCK_FORM), \
@@ -35,7 +35,6 @@ def test_run_applicator_returns_result():
 
 
 def test_run_applicator_returns_manual_required_on_form_failure():
-    from backend.agents.applicator import run_applicator
     with patch("backend.agents.applicator.fetch_application_form",
                return_value={"status": "manual_required", "url": "https://acme.com/apply"}), \
          patch("backend.agents.applicator.tailor_resume", return_value=MOCK_TAILORED):
@@ -44,7 +43,6 @@ def test_run_applicator_returns_manual_required_on_form_failure():
 
 
 def test_run_applicator_handles_invalid_json_from_llm():
-    from backend.agents.applicator import run_applicator
     with patch("backend.agents.applicator.llm.complete") as mock_complete, \
          patch("backend.agents.applicator.fetch_application_form", return_value=MOCK_FORM), \
          patch("backend.agents.applicator.tailor_resume", return_value=MOCK_TAILORED):

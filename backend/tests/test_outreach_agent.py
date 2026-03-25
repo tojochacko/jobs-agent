@@ -1,6 +1,7 @@
 # backend/tests/test_outreach_agent.py
 from unittest.mock import patch
 from backend.llm import LLMResponse
+from backend.agents.outreach import run_outreach, generate_cover_letter
 
 MOCK_HR = {"hr_name": "Jane Smith", "hr_email": "jane@acme.com", "hr_confidence": "search_result"}
 MOCK_COVER = "Dear Jane,\n\nI am excited to apply for the Python Engineer role at Acme..."
@@ -8,7 +9,6 @@ MOCK_RESUME_PATH = "uploads/tailored_1.pdf"
 
 
 def test_run_outreach_returns_draft():
-    from backend.agents.outreach import run_outreach
     with patch("backend.agents.outreach.find_hr_contact", return_value=MOCK_HR), \
          patch("backend.agents.outreach.generate_cover_letter", return_value=MOCK_COVER), \
          patch("backend.agents.outreach.tailor_resume", return_value=MOCK_RESUME_PATH):
@@ -26,7 +26,6 @@ def test_run_outreach_returns_draft():
 
 
 def test_run_outreach_proceeds_with_unknown_contact():
-    from backend.agents.outreach import run_outreach
     unknown_hr = {"hr_name": "", "hr_email": "", "hr_confidence": "unknown"}
     with patch("backend.agents.outreach.find_hr_contact", return_value=unknown_hr), \
          patch("backend.agents.outreach.generate_cover_letter", return_value="Cover letter"), \
@@ -37,7 +36,6 @@ def test_run_outreach_proceeds_with_unknown_contact():
 
 
 def test_generate_cover_letter_returns_string():
-    from backend.agents.outreach import generate_cover_letter
     cover = "Dear Jane,\n\nI am excited to apply for the Python Engineer role at Acme."
     with patch("backend.agents.outreach.llm.complete") as mock_complete, \
          patch("backend.tools.resume_tools._read_resume", return_value="Resume content"):
