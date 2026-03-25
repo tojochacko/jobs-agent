@@ -4,13 +4,17 @@ from backend.config import settings
 
 def search_jobs(query: str, location: str = "", num_results: int = 10) -> list[dict]:
     """Call SerpAPI Google Jobs endpoint and return normalized job list."""
+    is_remote = location.strip().lower() == "remote"
     params = {
         "engine": "google_jobs",
         "q": query,
-        "location": location,
         "num": num_results,
         "api_key": settings.SERP_API_KEY,
     }
+    if is_remote:
+        params["ltype"] = "1"  # Google Jobs remote filter
+    elif location:
+        params["location"] = location
     response = requests.get("https://serpapi.com/search", params=params)
     response.raise_for_status()
     data = response.json()

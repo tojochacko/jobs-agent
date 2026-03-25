@@ -2,6 +2,35 @@
 
 ## What Was Done This Session (2026-03-25)
 
+### JobScout Refactor — Fetch-First Pattern
+
+Replaced the agentic tool-call loop in `backend/agents/job_scout.py` with a simpler fetch-first design:
+- SerpAPI is now called directly by `run_job_scout()` once per job title
+- A single LLM call handles scoring only (no tools passed)
+- Scoring prompt rewritten to be explicit about its role (judge, not searcher)
+- 6 new tests replace the old tool-call-based tests; all pass
+
+**Key learning:** The tool-call loop added no quality value here — the LLM was just mechanically echoing `job_titles` into search queries. The real LLM value is in scoring. Agentic loops are justified only when the LLM needs to make non-deterministic decisions about which tools to call or how to adapt based on intermediate results.
+
+### SerpAPI Remote Filter Fix
+
+`backend/tools/serp.py` — passing `location="Remote"` to the `google_jobs` engine returned HTTP 400. Google Jobs does not accept "Remote" as a geographic location. Fix: detect `location.strip().lower() == "remote"` and pass `ltype=1` instead (Google Jobs native remote filter). Non-remote locations pass through as before.
+
+### Deprecation Warning Fixes (Partial)
+
+- `backend/routers/jobs.py` — `class Config: from_attributes = True` → `model_config = ConfigDict(from_attributes=True)` (Pydantic v2)
+- `datetime.utcnow()` warnings in `auth.py`, `email_tools.py`, `outreach.py` — **intentionally left as `utcnow()` with `# noqa: DTZ003`**
+
+**Key learning:** Replacing `datetime.utcnow()` with `datetime.now(timezone.utc)` breaks SQLite compatibility. SQLite stores datetimes as naive strings; SQLAlchemy returns naive datetimes on read. Comparing a timezone-aware datetime against a naive one raises `TypeError` at runtime, which caused `test_callback_stores_token` to hang. The correct fix requires migrating `OAuthToken.expires_at` to a timezone-aware column type — a schema migration, not a one-line swap.
+
+### Docker + Test Workflow Learnings
+
+- **Use `docker compose exec` not `run --rm`** for test runs when the stack is up. `run --rm` spawns a fresh container each time, accumulates OOM-killed containers, and causes severe resource contention (89 tests took 52 minutes under contention vs. seconds on a clean container).
+- **Use the Agent tool for test runs and research** to avoid polluting the main context window with large output.
+- **`uv add` requires a source volume mount** to persist `pyproject.toml`/`uv.lock` changes to the host. Use: `docker run --rm -v "$(pwd)/backend:/app" -w /app jobapplieragent-backend uv add <package>`
+
+---
+
 ### OpenAI Provider Support Added to `backend/llm.py`
 
 Added an OpenAI adapter to the in-house LLM gateway so agents can be configured to use OpenAI models via the `openai/` provider prefix.
@@ -43,6 +72,30 @@ Replaced `litellm==1.82.6` with an in-house LLM gateway module. This was the pla
 
 ---
 
+---
+
+## What Was Done This Session (2026-03-25, test performance)
+
+### Test Suite: 47 Minutes → 0.67 Seconds
+
+Diagnosed and fixed the test suite running at 47 minutes for 89 tests.
+
+**Root cause:** `TestClient(app)` lifespan called `run_poll()` on every test. `run_poll()` queries the production SQLite DB (`/app/data/jobapplier.db`) which had real preferences saved — triggering live SerpAPI + OpenAI API calls (~90s each). With ~20 tests using the `client` fixture, that was ~30 minutes of live API calls in test setup alone.
+
+**Fixes in `backend/tests/conftest.py`:**
+- `db_engine` → `scope="session"` — `Base.metadata.create_all/drop_all` now runs once per session, not per test
+- `client` → `scope="module"` — `TestClient` ASGI lifespan runs once per test module (8×) instead of per test
+- Added `patch("backend.main.run_poll")` inside the `client` fixture — prevents real API calls during lifespan startup regardless of what's in the production DB
+- Added `autouse=True` `clean_db` fixture — DELETEs all table rows after each test for isolation (replaces per-test schema rebuild)
+- Removed `inspect()` assertions in conftest — were defensive guards that added reflection overhead per test
+- `test_models.py` local `db` fixture replaced with shared `db_session` from conftest
+
+**Fixes in test files (13 files):** Moved `from backend.x import y` from inside test functions to module level.
+
+**Key discovery:** The Docker production container has NO source code bind mount. File edits on the host are not picked up by `docker compose exec`. Changes must be copied with `docker cp backend/tests/. <container>:/app/backend/tests/` until the image is rebuilt.
+
+---
+
 ## Current State of the Project
 
 All 7 implementation phases complete:
@@ -57,7 +110,7 @@ All 7 implementation phases complete:
 | 6 — Security + uv Migration | Complete | Docker port hardening, pip → uv |
 | 7 — LLM Gateway Replacement | Complete | litellm removed, in-house backend/llm.py |
 
-**11 llm tests + full suite passing. No litellm references anywhere in the codebase. OpenAI and Anthropic providers both supported.**
+**89 tests pass in 0.67s. No litellm references anywhere in the codebase. OpenAI and Anthropic providers both supported.**
 
 ---
 

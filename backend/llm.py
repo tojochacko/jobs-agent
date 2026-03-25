@@ -1,10 +1,13 @@
 # backend/llm.py
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 
 import anthropic
 import openai
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -30,13 +33,24 @@ def complete(
     if "/" not in model:
         raise ValueError(f"Model must be 'provider/model', got: {model!r}")
     provider, model_name = model.split("/", 1)
+
+    logger.debug("LLM REQUEST  model=%s\n%s", model, json.dumps(messages, indent=2))
+
     match provider:
         case "anthropic":
-            return _anthropic_complete(model_name, messages, max_tokens, tools)
+            result = _anthropic_complete(model_name, messages, max_tokens, tools)
         case "openai":
-            return _openai_complete(model_name, messages, max_tokens, tools)
+            result = _openai_complete(model_name, messages, max_tokens, tools)
         case _:
             raise ValueError(f"Unsupported provider: {provider!r}")
+
+    logger.debug(
+        "LLM RESPONSE model=%s  content=%r  tool_calls=%s",
+        model,
+        result.content,
+        json.dumps([{"id": tc.id, "name": tc.name, "arguments": tc.arguments} for tc in result.tool_calls], indent=2),
+    )
+    return result
 
 
 # ---------------------------------------------------------------------------

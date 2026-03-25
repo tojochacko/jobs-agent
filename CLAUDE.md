@@ -106,11 +106,13 @@ React Frontend (Vite @ :5173)
 
 Run commands inside containers (when not using the devcontainer terminal):
 ```bash
-docker compose run --rm backend sh -c "uv sync && pytest backend/tests/"  # run backend tests
-docker compose exec backend ruff check .                                   # lint backend
-docker compose exec frontend npm run test:run                              # run frontend tests
-docker compose exec frontend npm run lint                                  # lint frontend
+docker compose exec backend sh -c "uv sync -q && pytest backend/tests/ -q"  # run backend tests (stack must be up)
+docker compose exec backend ruff check .                                      # lint backend
+docker compose exec frontend npm run test:run                                 # run frontend tests
+docker compose exec frontend npm run lint                                     # lint frontend
 ```
+
+> **Prefer `exec` over `run --rm` for tests.** `docker compose exec` reuses the already-running container — no spin-up cost and no risk of accumulating OOM-killed containers. Only fall back to `docker compose run --rm` if the stack is not running.
 
 > **Why `uv sync` before pytest?** The production image is built with `--no-dev`, so pytest is not installed. Running `uv sync` inside the container adds dev deps to the venv before running tests.
 

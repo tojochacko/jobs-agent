@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import Job
@@ -21,8 +21,7 @@ class JobResponse(BaseModel):
     status: str
     error_reason: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 @router.get("/jobs", response_model=list[JobResponse])
