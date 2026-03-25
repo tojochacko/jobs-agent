@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import anthropic
+import openai
 
 
 @dataclass
@@ -32,6 +33,8 @@ def complete(
     match provider:
         case "anthropic":
             return _anthropic_complete(model_name, messages, max_tokens, tools)
+        case "openai":
+            return _openai_complete(model_name, messages, max_tokens, tools)
         case _:
             raise ValueError(f"Unsupported provider: {provider!r}")
 
@@ -142,5 +145,41 @@ def _anthropic_complete(
             content = block.text
         elif block.type == "tool_use":
             tool_calls.append(ToolCall(id=block.id, name=block.name, arguments=block.input))
+
+    return LLMResponse(content=content, tool_calls=tool_calls)
+
+
+# ---------------------------------------------------------------------------
+# OpenAI adapter
+# ---------------------------------------------------------------------------
+
+def _openai_complete(
+    model_name: str,
+    messages: list[dict],
+    max_tokens: int,
+    tools: list[dict] | None,
+) -> LLMResponse:
+    client = openai.OpenAI()
+
+    kwargs: dict[str, Any] = {
+        "model": model_name,
+        "max_tokens": max_tokens,
+        "messages": messages,
+    }
+    if tools:
+        kwargs["tools"] = tools
+
+    response = client.chat.completions.create(**kwargs)
+    message = response.choices[0].message
+
+    content: str | None = message.content or None
+    tool_calls: list[ToolCall] = []
+    if message.tool_calls:
+        for tc in message.tool_calls:
+            tool_calls.append(ToolCall(
+                id=tc.id,
+                name=tc.function.name,
+                arguments=json.loads(tc.function.arguments),
+            ))
 
     return LLMResponse(content=content, tool_calls=tool_calls)

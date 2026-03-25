@@ -143,6 +143,83 @@ def test_complete_anthropic_assistant_tool_calls_translated():
     assert asst_msg["content"][0]["input"] == {"query": "Python"}  # dict, not string
 
 
+# --- openai tests ---
+
+def _openai_text_resp(text: str):
+    message = MagicMock()
+    message.content = text
+    message.tool_calls = None
+    choice = MagicMock()
+    choice.message = message
+    resp = MagicMock()
+    resp.choices = [choice]
+    return resp
+
+
+def _openai_tool_resp(tool_id: str, name: str, arguments: dict):
+    tc = MagicMock()
+    tc.id = tool_id
+    tc.function.name = name
+    tc.function.arguments = json.dumps(arguments)
+    message = MagicMock()
+    message.content = None
+    message.tool_calls = [tc]
+    choice = MagicMock()
+    choice.message = message
+    resp = MagicMock()
+    resp.choices = [choice]
+    return resp
+
+
+def test_complete_openai_simple_text():
+    with patch("backend.llm.openai.OpenAI") as MockClient:
+        MockClient.return_value.chat.completions.create.return_value = _openai_text_resp("Hello from GPT!")
+        result = complete(
+            "openai/gpt-4o-mini",
+            [{"role": "user", "content": "Hi"}],
+        )
+    assert result.content == "Hello from GPT!"
+    assert result.tool_calls == []
+
+
+def test_complete_openai_tool_use():
+    with patch("backend.llm.openai.OpenAI") as MockClient:
+        MockClient.return_value.chat.completions.create.return_value = _openai_tool_resp(
+            "tc_1", "search_jobs", {"query": "Python Engineer"}
+        )
+        result = complete(
+            "openai/gpt-4o-mini",
+            [{"role": "user", "content": "Find jobs"}],
+            tools=[{"type": "function", "function": {
+                "name": "search_jobs",
+                "description": "Search jobs",
+                "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+            }}],
+        )
+    assert result.content is None
+    assert len(result.tool_calls) == 1
+    assert result.tool_calls[0].id == "tc_1"
+    assert result.tool_calls[0].name == "search_jobs"
+    assert result.tool_calls[0].arguments == {"query": "Python Engineer"}
+
+
+def test_complete_openai_system_message_stays_in_messages():
+    """OpenAI accepts system messages inline in the messages list (unlike Anthropic)."""
+    with patch("backend.llm.openai.OpenAI") as MockClient:
+        MockClient.return_value.chat.completions.create.return_value = _openai_text_resp("ok")
+        complete(
+            "openai/gpt-4o-mini",
+            [
+                {"role": "system", "content": "You are helpful."},
+                {"role": "user", "content": "Hello"},
+            ],
+        )
+    call_kwargs = MockClient.return_value.chat.completions.create.call_args.kwargs
+    messages = call_kwargs["messages"]
+    assert messages[0]["role"] == "system"
+    assert messages[0]["content"] == "You are helpful."
+
+
 def test_complete_anthropic_assistant_tool_calls_dict_format():
     """Assistant messages with internal dict-format tool_calls (no 'function' key) are translated correctly."""
     with patch("backend.llm.anthropic.Anthropic") as MockClient:

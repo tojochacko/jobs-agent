@@ -15,7 +15,7 @@ JobApplierAgent is a single-user autonomous job search assistant. It discovers m
 |---|---|
 | Frontend | React 19 + Vite (JavaScript) |
 | Backend | Python 3.12 + FastAPI |
-| LLM | LiteLLM — defaults to `anthropic/claude-haiku-4-5`; swap provider via model env vars without code changes |
+| LLM | In-house `backend/llm.py` gateway — supports `anthropic/` and `openai/` providers; swap via model env vars |
 | Job Discovery | SerpAPI (Google Jobs + Google Search) |
 | Browser Automation | Playwright (supervised mode only — agent never auto-submits) |
 | Email | Gmail / Outlook OAuth |
@@ -123,9 +123,10 @@ uvicorn main:app --reload          # starts at :8000
 pytest backend/tests/              # run all tests (after uv sync)
 ```
 
-To regenerate the lock file (must use a Linux container — not host uv):
+To add a dependency or regenerate the lock file (source must be volume-mounted into the backend image):
 ```bash
-docker run --rm -v $(pwd)/backend:/app -w /app ghcr.io/astral-sh/uv:0.11.0 uv lock
+docker run --rm -v "$(pwd)/backend:/app" -w /app jobapplieragent-backend uv add <package>
+docker run --rm -v "$(pwd)/backend:/app" -w /app jobapplieragent-backend uv lock
 ```
 
 **Frontend:**
@@ -139,11 +140,10 @@ npm run lint
 ## Environment Variables
 
 ```bash
-# LLM — LiteLLM routes based on model prefix (anthropic/, openai/, gemini/)
+# LLM — backend/llm.py routes based on model prefix (anthropic/, openai/)
 ANTHROPIC_API_KEY=
-OPENAI_API_KEY=                        # optional — only if using openai/ models
-GEMINI_API_KEY=                        # optional — only if using gemini/ models
-ORCHESTRATOR_MODEL=anthropic/claude-haiku-4-5   # or anthropic/claude-sonnet-4-6
+OPENAI_API_KEY=                        # required if using openai/ models
+ORCHESTRATOR_MODEL=anthropic/claude-haiku-4-5   # or openai/gpt-4o-mini
 SCOUT_MODEL=anthropic/claude-haiku-4-5
 APPLICATOR_MODEL=anthropic/claude-haiku-4-5
 OUTREACH_MODEL=anthropic/claude-haiku-4-5
@@ -180,7 +180,7 @@ DATABASE_URL=sqlite:///./jobapplier.db
 - **Match threshold:** Jobs scoring below `JOB_MATCH_THRESHOLD` (default 0.6) are not stored. Webhook jobs can bypass this with `WEBHOOK_BYPASS_THRESHOLD=true`.
 - **tailor_resume shared tool:** Used by both Applicator (`output_format="text"` for form fields) and Outreach (`output_format="pdf"` for email attachment) — defined in `tools/resume_tools.py`.
 - **Resume upload constraints:** PDF only; 50 MB max. Validated on both client (`Preferences.jsx`) and server (`routers/resume.py`).
-- **LLM gateway: in-house `backend/llm.py`:** `litellm` was removed (versions 1.82.7/1.82.8 contained a supply chain attack). All agents now call `llm.complete(model, messages, ...)` which dispatches to the `anthropic` SDK. To add a new provider, add a new `_<provider>_complete()` adapter in `backend/llm.py`.
+- **LLM gateway: in-house `backend/llm.py`:** `litellm` was removed (supply chain attack in 1.82.7/1.82.8). All agents call `llm.complete(model, messages, ...)` which dispatches on the `provider/model` prefix. Supported providers: `anthropic` (via `anthropic` SDK), `openai` (via `openai` SDK). To add a new provider, add a `_<provider>_complete()` adapter and a `case "<provider>":` branch in `backend/llm.py`.
 - **Docker ports bound to `127.0.0.1`:** Both `:8000` and `:5173` are only reachable from localhost. Do not change to `0.0.0.0` without understanding the LAN exposure implications.
 - **uv + lock file:** Dependencies are managed via `backend/pyproject.toml` and pinned in `backend/uv.lock`. Production image uses `uv sync --frozen --no-dev` (no pip). Dev deps (pytest, pytest-mock) are in `[dependency-groups] dev` and excluded from the production image.
 
@@ -215,6 +215,8 @@ DATABASE_URL=sqlite:///./jobapplier.db
 | 4 — Webhook Integration | Complete | `POST /webhook/job-alerts`, Orchestrator scoring agent, external agent ingestion, deduplication |
 | 5 — LiteLLM + UI Redesign | Complete | LiteLLM migration (all agents), warm-neutral CSS theme, left sidebar AppShell, TagInput component, Preferences page upgrade |
 | 6 — Security + uv Migration | Complete | litellm supply chain pin, Docker port hardening (127.0.0.1), pip → uv + pyproject.toml + uv.lock |
+| 7 — LLM Gateway Replacement | Complete | litellm removed, in-house backend/llm.py with Anthropic adapter |
+| 8 — OpenAI Provider Support | Complete | openai/ provider added to backend/llm.py; openai>=2.29.0 dependency |
 
 ## Testing Approach
 

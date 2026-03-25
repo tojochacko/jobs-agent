@@ -19,6 +19,7 @@ dependencies = [
     "google-auth-oauthlib>=1.2.1",
     "google-api-python-client>=2.154.0",
     "msal>=1.31.0",
+    "openai>=2.29.0",
 ]
 
 [dependency-groups]

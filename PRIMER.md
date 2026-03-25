@@ -2,6 +2,20 @@
 
 ## What Was Done This Session (2026-03-25)
 
+### OpenAI Provider Support Added to `backend/llm.py`
+
+Added an OpenAI adapter to the in-house LLM gateway so agents can be configured to use OpenAI models via the `openai/` provider prefix.
+
+**Changes:**
+- `backend/llm.py` — added `import openai`, `case "openai":` branch in the `complete()` router, and `_openai_complete()` adapter. Messages pass through as-is (already in OpenAI format); tool call arguments are JSON-decoded from the response string.
+- `backend/pyproject.toml` + `uv.lock` — `openai>=2.29.0` added as a dependency (resolved to `2.29.0`).
+- `backend/tests/test_llm.py` — 3 new tests: `test_complete_openai_simple_text`, `test_complete_openai_tool_use`, `test_complete_openai_system_message_stays_in_messages`. All 11 llm tests pass.
+- `.env` — corrected `gpt-5-mini` → `gpt-4o-mini` (the correct OpenAI model name).
+
+**Note on `uv add` in Docker:** The production image has no source volume mount. To add packages and persist `pyproject.toml`/`uv.lock` changes, use: `docker run --rm -v "$(pwd)/backend:/app" -w /app jobapplieragent-backend uv add <package>`
+
+---
+
 ### LLM Gateway Replacement (litellm → in-house `backend/llm.py`)
 
 Replaced `litellm==1.82.6` with an in-house LLM gateway module. This was the planned follow-up to the prior session's supply chain attack mitigation (pinning litellm to 1.82.6). The new gateway eliminates the dependency entirely.
@@ -43,13 +57,13 @@ All 7 implementation phases complete:
 | 6 — Security + uv Migration | Complete | Docker port hardening, pip → uv |
 | 7 — LLM Gateway Replacement | Complete | litellm removed, in-house backend/llm.py |
 
-**83 tests passing. No litellm references anywhere in the codebase.**
+**11 llm tests + full suite passing. No litellm references anywhere in the codebase. OpenAI and Anthropic providers both supported.**
 
 ---
 
 ## Recommended Next Steps
 
-1. **Add a second LLM provider** — `backend/llm.py` is structured for multi-provider support. Adding `_openai_complete()` is straightforward if OpenAI models are needed.
+1. **Add a third LLM provider** — `backend/llm.py` supports `anthropic/` and `openai/`. Adding Gemini requires a `_gemini_complete()` adapter and `google-generativeai` dependency.
 2. **Fix pre-existing deprecation warnings** — 55 warnings in the test suite:
    - `PydanticDeprecatedSince20` in `routers/jobs.py:12` — switch to `model_config = ConfigDict(...)`
    - `datetime.utcnow()` in `routers/auth.py`, `tools/email_tools.py`, `routers/outreach.py` — switch to `datetime.now(datetime.UTC)`
