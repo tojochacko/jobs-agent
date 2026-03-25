@@ -1,4 +1,5 @@
 import logging
+import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    run_poll()
+    threading.Thread(target=run_poll, daemon=True).start()
     yield
 
 
