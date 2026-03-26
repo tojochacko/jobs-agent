@@ -67,6 +67,7 @@ const COMPANY_SIZE_OPTIONS = [
 export function Preferences() {
   const [form, setForm] = useState({
     job_titles: [],
+    location: 'India',
     remote_hybrid: 'any',
     experience_level: '',
     domain: '',
@@ -81,6 +82,7 @@ export function Preferences() {
     getPreferences().then(pref => {
       if (pref) setForm({
         job_titles: pref.job_titles || [],
+        location: 'India',
         remote_hybrid: pref.remote_hybrid || 'any',
         experience_level: pref.experience_level || '',
         domain: pref.domain || '',

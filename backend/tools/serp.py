@@ -2,16 +2,20 @@ import requests
 from backend.config import settings
 
 
-def search_jobs(query: str, location: str = "", num_results: int = 10) -> list[dict]:
+def search_jobs(
+    query: str,
+    location: str = "",
+    remote_hybrid: str = "any",
+    num_results: int = 15,
+) -> list[dict]:
     """Call SerpAPI Google Jobs endpoint and return normalized job list."""
-    is_remote = location.strip().lower() == "remote"
     params = {
         "engine": "google_jobs",
         "q": query,
         "num": num_results,
         "api_key": settings.SERP_API_KEY,
     }
-    if is_remote:
+    if remote_hybrid == "remote":
         params["ltype"] = "1"  # Google Jobs remote filter
     elif location:
         params["location"] = location
